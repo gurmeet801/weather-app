@@ -7,11 +7,8 @@ app = Flask(__name__)
 
 DEFAULT_LAT = "37.7749"
 DEFAULT_LON = "-122.4194"
-WEATHER_GOV_USER_AGENT = os.getenv(
-    "WEATHER_GOV_USER_AGENT", "weather-app (local-dev@example.com)"
-)
 WEATHER_GOV_HEADERS = {
-    "User-Agent": WEATHER_GOV_USER_AGENT,
+    "User-Agent": "(weather.jawand.dev, jawandsingh@gmail.com)",
     "Accept": "application/geo+json",
 }
 
