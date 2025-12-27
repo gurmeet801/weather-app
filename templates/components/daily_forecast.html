@@ -1,0 +1,24 @@
+{# 7-Day Forecast Component #}
+{# Variables: forecast (required) #}
+<div class="glass-card rounded-3xl p-6 flex-1">
+  <p class="text-white/50 text-xs uppercase tracking-widest mb-4">7-Day Forecast</p>
+  {% if forecast.daily_forecast %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    {% for day in forecast.daily_forecast %}
+    <div class="glass-panel-subtle rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-white/15 transition-colors">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium">{{ day.name }}</p>
+        <p class="text-xs text-white/50 mt-0.5 truncate">{{ day.shortForecast }}</p>
+      </div>
+      <p class="text-xl font-semibold text-right">
+        {{ day.temperature }}<span class="text-sm text-white/50">°{{ day.temperatureUnit }}</span>
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="glass-panel-subtle rounded-xl p-4 text-center">
+    <p class="text-white/50 text-sm">Extended forecast unavailable</p>
+  </div>
+  {% endif %}
+</div>

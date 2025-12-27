@@ -1,0 +1,8 @@
+{# Loading State Component #}
+<div id="loading-state" class="modal-overlay {% if forecast or error %}hidden{% endif %}">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content glass-card rounded-3xl p-8 text-center fade-up">
+    <div class="spinner mx-auto mb-4"></div>
+    <p id="loading-text" class="text-white/80">Detecting your location...</p>
+  </div>
+</div>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Weather{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="min-h-screen text-white antialiased">
+    <div class="relative min-h-screen overflow-hidden">
+      <!-- Background Effects -->
+      <div class="absolute inset-0">
+        <div class="orb orb-one"></div>
+        <div class="orb orb-two"></div>
+        <div class="orb orb-three"></div>
+        <div class="bg-grid"></div>
+      </div>
+
+      <main class="relative w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {% block content %}{% endblock %}
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 pb-4">
+          <p class="text-white/30 text-xs">Data from api.weather.gov</p>
+        </footer>
+      </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

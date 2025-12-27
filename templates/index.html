@@ -1,353 +1,58 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Weather</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="min-h-screen text-white antialiased">
-    <div class="relative min-h-screen overflow-hidden flex items-center justify-center">
-      <div class="absolute inset-0">
-        <div class="orb orb-one"></div>
-        <div class="orb orb-two"></div>
-        <div class="orb orb-three"></div>
-        <div class="bg-grid"></div>
-      </div>
+{% extends "base.html" %}
 
-      <main class="relative w-full max-w-md px-6 py-12">
-        <!-- Loading State -->
-        <div id="loading-state" class="modal-overlay {% if forecast or error %}hidden{% endif %}">
-          <div class="modal-backdrop"></div>
-          <div class="modal-content glass-card rounded-3xl p-8 text-center fade-up">
-            <div class="spinner mx-auto mb-4"></div>
-            <p id="loading-text" class="text-white/80">Detecting your location...</p>
-          </div>
-        </div>
+{% block content %}
+<!-- Loading State -->
+{% include "components/loading.html" %}
 
-        <!-- Permission Request -->
-        <div id="permission-state" class="glass-card rounded-3xl p-8 text-center fade-up hidden">
-          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-          </div>
-          <h2 class="text-xl font-semibold mb-2">Location Access</h2>
-          <p class="text-white/60 text-sm mb-6">Allow location access to see weather for your area</p>
-          <button id="grant-location" class="btn-primary w-full rounded-2xl px-5 py-3 text-sm">
-            Enable Location
-          </button>
-          <p id="permission-error" class="text-rose-300 text-xs mt-4 hidden"></p>
-        </div>
+<!-- Permission Request -->
+{% include "components/permission.html" %}
 
-        <!-- Weather Display -->
-        <div id="weather-state" class="fade-up {% if not forecast and not error %}hidden{% endif %}">
-          {% if error %}
-          <div class="glass-card rounded-3xl p-6 border border-rose-300/30 bg-rose-500/5 mb-4">
-            <p class="text-rose-200 text-sm text-center">{{ error }}</p>
-          </div>
-          {% endif %}
+<!-- Weather Display -->
+<div id="weather-state" class="fade-up {% if not forecast and not error %}hidden{% endif %}">
+  <!-- Error Message -->
+  {% include "components/error.html" %}
 
-          {% if forecast %}
-          <div class="glass-card rounded-3xl p-8">
-            <!-- Location Header -->
-            <div class="text-center mb-6">
-              <p class="text-white/60 text-xs uppercase tracking-widest mb-1">Current Weather</p>
-              <h1 class="text-lg font-medium">{{ forecast.location }}</h1>
-            </div>
+  {% if forecast %}
+  <!-- Header with Location -->
+  {% include "components/header.html" %}
 
-            <!-- Main Temperature -->
-            <div class="text-center mb-6">
-              <p class="text-7xl font-light tracking-tight">
-                {{ forecast.period.temperature }}<span class="text-4xl text-white/60">°{{ forecast.period.temperatureUnit }}</span>
-              </p>
-              <p class="text-white/70 mt-2">{{ forecast.period.shortForecast }}</p>
-            </div>
+  <!-- Alerts Banner -->
+  {% include "components/alerts.html" %}
 
-            <!-- Weather Details -->
-            <div class="grid grid-cols-2 gap-3 mb-6">
-              <div class="glass-panel-subtle rounded-xl p-3 text-center">
-                <p class="text-xs text-white/50 uppercase tracking-wide">Wind</p>
-                <p class="text-sm font-medium mt-1">{{ forecast.period.windSpeed }} {{ forecast.period.windDirection }}</p>
-              </div>
-              <div class="glass-panel-subtle rounded-xl p-3 text-center">
-                <p class="text-xs text-white/50 uppercase tracking-wide">Period</p>
-                <p class="text-sm font-medium mt-1">{{ forecast.period.name }}</p>
-              </div>
-            </div>
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+    <!-- Current Weather Card -->
+    {% include "components/current_weather.html" %}
 
-            {% if forecast.next_period %}
-            <div class="glass-panel-subtle rounded-xl p-3 mb-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-xs text-white/50 uppercase tracking-wide">{{ forecast.next_period.name }}</p>
-                  <p class="text-sm text-white/70 mt-1">{{ forecast.next_period.shortForecast }}</p>
-                </div>
-                <p class="text-2xl font-light">{{ forecast.next_period.temperature }}°</p>
-              </div>
-            </div>
-            {% endif %}
+    <!-- Right Column -->
+    <div class="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
+      <!-- Hourly Forecast -->
+      {% include "components/hourly_forecast.html" %}
 
-            <!-- Detailed Forecast -->
-            <p class="text-sm text-white/60 leading-relaxed">{{ forecast.period.detailedForecast }}</p>
-          </div>
-          {% endif %}
-
-          <!-- Change Location -->
-          <div class="mt-4 text-center">
-            <button id="toggle-location" class="text-white/50 hover:text-white/80 text-sm py-2 transition-colors">
-              Change location
-            </button>
-          </div>
-        </div>
-
-        <!-- Location Modal -->
-        <div id="location-modal" class="modal-overlay hidden">
-          <div class="modal-backdrop" id="modal-backdrop"></div>
-          <div class="modal-content glass-card rounded-2xl p-6 w-full max-w-sm mx-4">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium">Change Location</h3>
-              <button id="close-modal" class="text-white/50 hover:text-white/80 transition-colors p-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <form method="get" id="location-form">
-              <input
-                id="address"
-                name="address"
-                type="text"
-                autocomplete="street-address"
-                value="{{ address }}"
-                placeholder="Enter city or address"
-                class="glass-input w-full rounded-xl px-4 py-3 text-sm mb-3"
-              />
-              <button type="submit" class="btn-primary w-full rounded-xl px-4 py-3 text-sm mb-3">
-                Search
-              </button>
-              <button type="button" id="use-current-location" class="btn-secondary w-full rounded-xl px-4 py-3 text-sm">
-                Use current location
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Switch Location Modal -->
-        <div id="switch-location-modal" class="modal-overlay hidden">
-          <div class="modal-backdrop" id="switch-modal-backdrop"></div>
-          <div class="modal-content glass-card rounded-2xl p-6 w-full max-w-sm mx-4 text-center">
-            <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-              <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 21s-6-4.35-6-10a6 6 0 1112 0c0 5.65-6 10-6 10z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </div>
-            <h3 class="text-lg font-medium mb-2">Switch location?</h3>
-            <p class="text-white/60 text-sm mb-6">We detected you're somewhere else. Want local weather instead?</p>
-            <button id="switch-to-current" class="btn-primary w-full rounded-xl px-4 py-3 text-sm mb-3">
-              Switch to current location
-            </button>
-            <button id="keep-location" class="btn-secondary w-full rounded-xl px-4 py-3 text-sm">
-              Keep this location
-            </button>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <p class="text-center text-white/30 text-xs mt-6">Data from api.weather.gov</p>
-      </main>
+      <!-- 7-Day Forecast -->
+      {% include "components/daily_forecast.html" %}
     </div>
+  </div>
+  {% endif %}
+</div>
 
-    <script>
-      const loadingState = document.getElementById('loading-state');
-      const permissionState = document.getElementById('permission-state');
-      const weatherState = document.getElementById('weather-state');
-      const loadingText = document.getElementById('loading-text');
-      const grantLocationBtn = document.getElementById('grant-location');
-      const permissionError = document.getElementById('permission-error');
-      const toggleLocationBtn = document.getElementById('toggle-location');
-      const locationModal = document.getElementById('location-modal');
-      const closeModalBtn = document.getElementById('close-modal');
-      const modalBackdrop = document.getElementById('modal-backdrop');
-      const useCurrentLocationBtn = document.getElementById('use-current-location');
-      const switchLocationModal = document.getElementById('switch-location-modal');
-      const switchModalBackdrop = document.getElementById('switch-modal-backdrop');
-      const switchToCurrentBtn = document.getElementById('switch-to-current');
-      const keepLocationBtn = document.getElementById('keep-location');
+<!-- Modals -->
+{% include "components/location_modal.html" %}
+{% include "components/switch_modal.html" %}
+{% endblock %}
 
-      const hasWeatherData = {{ 'true' if forecast or error else 'false' }};
-      const usedCachedLocation = {{ 'true' if used_cached_location else 'false' }};
-      const urlParams = new URLSearchParams(window.location.search);
-      const addressParam = urlParams.get('address');
-      const hasAddressParam = addressParam && addressParam.trim().length > 0;
-      const hasLocationParams = (urlParams.has('lat') && urlParams.has('lon')) || hasAddressParam;
-
-      function showState(state) {
-        loadingState.classList.add('hidden');
-        permissionState.classList.add('hidden');
-        weatherState.classList.add('hidden');
-        state.classList.remove('hidden');
-      }
-
-      function openModal() {
-        locationModal.classList.remove('hidden');
-        document.getElementById('address').focus();
-      }
-
-      function closeModal() {
-        locationModal.classList.add('hidden');
-      }
-
-      const LOCATION_DELTA_THRESHOLD = 0.03;
-      let pendingSwitchLocation = null;
-
-      function getCookieValue(name) {
-        const match = document.cookie.split('; ').find((row) => row.startsWith(`${name}=`));
-        return match ? decodeURIComponent(match.split('=')[1]) : null;
-      }
-
-      function getCachedLocation() {
-        const lat = Number.parseFloat(getCookieValue('last_lat'));
-        const lon = Number.parseFloat(getCookieValue('last_lon'));
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-          return null;
-        }
-        return { lat, lon };
-      }
-
-      function isSignificantlyDifferent(a, b) {
-        return (
-          Math.abs(a.lat - b.lat) > LOCATION_DELTA_THRESHOLD ||
-          Math.abs(a.lon - b.lon) > LOCATION_DELTA_THRESHOLD
-        );
-      }
-
-      function redirectToLocation(coords) {
-        const latValue = Number(coords.latitude ?? coords.lat);
-        const lonValue = Number(coords.longitude ?? coords.lon);
-        if (!Number.isFinite(latValue) || !Number.isFinite(lonValue)) {
-          return;
-        }
-        const lat = latValue.toFixed(4);
-        const lon = lonValue.toFixed(4);
-        window.location = `/?lat=${lat}&lon=${lon}`;
-      }
-
-      function openSwitchModal(coords) {
-        pendingSwitchLocation = coords;
-        switchLocationModal.classList.remove('hidden');
-      }
-
-      function closeSwitchModal() {
-        switchLocationModal.classList.add('hidden');
-        pendingSwitchLocation = null;
-      }
-
-      function requestLocation({ showLoading = true, onSuccess } = {}) {
-        if (showLoading) {
-          showState(loadingState);
-          loadingText.textContent = 'Detecting your location...';
-        }
-
-        const handleSuccess = onSuccess || ((coords) => redirectToLocation(coords));
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            if (showLoading) {
-              loadingText.textContent = 'Loading weather...';
-            }
-            handleSuccess(position.coords);
-          },
-          (error) => {
-            if (!showLoading) {
-              return;
-            }
-            if (error.code === error.PERMISSION_DENIED) {
-              showState(permissionState);
-            } else {
-              permissionError.textContent = error.message || 'Unable to get location';
-              permissionError.classList.remove('hidden');
-              showState(permissionState);
-            }
-          },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-        );
-      }
-
-      function checkForLocationSwitch(coords) {
-        const cached = getCachedLocation();
-        if (!cached) {
-          return;
-        }
-        const fresh = { lat: coords.latitude, lon: coords.longitude };
-        if (isSignificantlyDifferent(cached, fresh)) {
-          openSwitchModal(fresh);
-        }
-      }
-
-      // Initial load logic
-      if (!hasWeatherData && !hasLocationParams) {
-        if (!navigator.geolocation) {
-          showState(permissionState);
-          permissionError.textContent = 'Geolocation is not supported';
-          permissionError.classList.remove('hidden');
-        } else {
-          requestLocation();
-        }
-      } else if (usedCachedLocation && navigator.geolocation) {
-        requestLocation({ showLoading: false, onSuccess: checkForLocationSwitch });
-      }
-
-      // Grant location button
-      grantLocationBtn?.addEventListener('click', () => {
-        permissionError.classList.add('hidden');
-        requestLocation();
-      });
-
-      // Toggle location modal
-      toggleLocationBtn?.addEventListener('click', openModal);
-      closeModalBtn?.addEventListener('click', closeModal);
-      modalBackdrop?.addEventListener('click', closeModal);
-
-      // Close modal on Escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') {
-          return;
-        }
-        if (!locationModal.classList.contains('hidden')) {
-          closeModal();
-        }
-        if (!switchLocationModal.classList.contains('hidden')) {
-          closeSwitchModal();
-        }
-      });
-
-      // Use current location from modal
-      useCurrentLocationBtn?.addEventListener('click', () => {
-        closeModal();
-        requestLocation();
-      });
-
-      // Switch location modal actions
-      switchToCurrentBtn?.addEventListener('click', () => {
-        if (!pendingSwitchLocation) {
-          return;
-        }
-        const coords = pendingSwitchLocation;
-        closeSwitchModal();
-        redirectToLocation(coords);
-      });
-      keepLocationBtn?.addEventListener('click', closeSwitchModal);
-      switchModalBackdrop?.addEventListener('click', closeSwitchModal);
-    </script>
-  </body>
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/weather.js') }}"></script>
+<script>
+  // Initialize the weather app with server-side data
+  const urlParams = new URLSearchParams(window.location.search);
+  const addressParam = urlParams.get('address');
+  const hasAddressParam = addressParam && addressParam.trim().length > 0;
+  
+  WeatherApp.init({
+    hasWeatherData: {{ 'true' if forecast or error else 'false' }},
+    usedCachedLocation: {{ 'true' if used_cached_location else 'false' }},
+    hasLocationParams: (urlParams.has('lat') && urlParams.has('lon')) || hasAddressParam,
+  });
+</script>
+{% endblock %}

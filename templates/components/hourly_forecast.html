@@ -1,0 +1,29 @@
+{# Hourly Forecast Component #}
+{# Variables: forecast (required) #}
+<div class="glass-card rounded-3xl p-6">
+  <div class="flex items-center justify-between mb-4">
+    <p class="text-white/50 text-xs uppercase tracking-widest">Today's Hourly</p>
+    {% if forecast.hourly_today %}
+    <p class="text-white/30 text-xs">Scroll →</p>
+    {% endif %}
+  </div>
+  {% if forecast.hourly_today %}
+  <div class="hourly-scroll flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
+    {% for hour in forecast.hourly_today %}
+    <div class="glass-panel-subtle rounded-xl p-3 min-w-[100px] text-center flex-shrink-0 hover:bg-white/15 transition-colors">
+      <p class="text-xs text-white/50 font-medium">{{ hour.time }}</p>
+      <p class="text-xl font-semibold mt-1">{{ hour.temperature }}°</p>
+      <p class="text-[10px] text-white/60 mt-1 leading-tight">{{ hour.shortForecast }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% elif forecast.hourly_error %}
+  <div class="glass-panel-subtle rounded-xl p-4 text-center">
+    <p class="text-rose-200 text-sm">{{ forecast.hourly_error }}</p>
+  </div>
+  {% else %}
+  <div class="glass-panel-subtle rounded-xl p-4 text-center">
+    <p class="text-white/50 text-sm">Hourly forecast unavailable</p>
+  </div>
+  {% endif %}
+</div>
