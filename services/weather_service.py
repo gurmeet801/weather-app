@@ -1,3 +1,5 @@
+import re
+
 import requests
 
 from utils import (
@@ -12,6 +14,57 @@ from utils import (
 )
 
 WEATHER_GOV_HEADERS = get_weather_headers()
+
+
+def _parse_wind_speed_mph(value):
+    if not value:
+        return None
+    numbers = re.findall(r"[-+]?\d*\.?\d+", value)
+    if not numbers:
+        return None
+    speeds = [float(num) for num in numbers]
+    return sum(speeds) / len(speeds)
+
+
+def _to_fahrenheit(temp, unit):
+    if unit == "C":
+        return (temp * 9 / 5) + 32
+    return temp
+
+
+def _from_fahrenheit(temp, unit):
+    if unit == "C":
+        return (temp - 32) * 5 / 9
+    return temp
+
+
+def _calculate_feels_like(temp, unit, humidity=None, wind_mph=None):
+    if temp is None:
+        return None
+    temp_f = _to_fahrenheit(temp, unit)
+    feels_f = temp_f
+
+    if humidity is not None and temp_f >= 80 and humidity >= 40:
+        t = temp_f
+        r = humidity
+        feels_f = (
+            -42.379
+            + 2.04901523 * t
+            + 10.14333127 * r
+            - 0.22475541 * t * r
+            - 0.00683783 * t * t
+            - 0.05481717 * r * r
+            + 0.00122874 * t * t * r
+            + 0.00085282 * t * r * r
+            - 0.00000199 * t * t * r * r
+        )
+    elif wind_mph is not None and temp_f <= 50 and wind_mph >= 3:
+        v = wind_mph
+        t = temp_f
+        feels_f = 35.74 + 0.6215 * t - 35.75 * (v**0.16) + 0.4275 * t * (v**0.16)
+
+    feels_value = _from_fahrenheit(feels_f, unit)
+    return int(round(feels_value))
 
 
 def build_hourly_today(periods):
@@ -117,6 +170,7 @@ def fetch_forecast(lat_value, lon_value):
 
     hourly_today = []
     hourly_error = None
+    hourly_periods = []
     if hourly_url:
         try:
             hourly_data = cached_get_json(
@@ -162,6 +216,31 @@ def fetch_forecast(lat_value, lon_value):
     if location_key:
         register_location(location_key, location, lat, lon)
 
+    current_temp = periods[0].get("temperature")
+    current_unit = periods[0].get("temperatureUnit")
+    humidity_value = None
+    wind_speed_mph = _parse_wind_speed_mph(periods[0].get("windSpeed"))
+
+    if hourly_periods:
+        hourly_current = hourly_periods[0]
+        hourly_temp = hourly_current.get("temperature")
+        hourly_unit = hourly_current.get("temperatureUnit") or current_unit
+        if hourly_temp is not None:
+            current_temp = hourly_temp
+            current_unit = hourly_unit
+        humidity = (hourly_current.get("relativeHumidity") or {}).get("value")
+        try:
+            humidity_value = float(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_value = None
+        wind_speed_mph = _parse_wind_speed_mph(hourly_current.get("windSpeed")) or wind_speed_mph
+
+    feels_like_temp = _calculate_feels_like(
+        current_temp, current_unit, humidity_value, wind_speed_mph
+    )
+    if feels_like_temp is None:
+        feels_like_temp = current_temp
+
     return {
         "location": location,
         "period": periods[0],
@@ -171,4 +250,8 @@ def fetch_forecast(lat_value, lon_value):
         "daily_forecast": build_daily_forecast(periods),
         "alerts": alerts,
         "alerts_error": alerts_error,
+        "feels_like_temperature": feels_like_temp,
+        "feels_like_unit": current_unit,
+        "actual_temperature": current_temp,
+        "actual_temperature_unit": current_unit,
     }, None

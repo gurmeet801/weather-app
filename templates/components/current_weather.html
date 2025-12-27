@@ -6,8 +6,14 @@
     
     <!-- Temperature Display -->
     <div class="text-center mb-6">
+      <p class="text-[10px] text-white/50 uppercase tracking-widest mb-2">Feels like</p>
       <p class="text-6xl sm:text-7xl font-light tracking-tight leading-none">
-        {{ forecast.period.temperature }}<span class="text-3xl sm:text-4xl text-white/50">°{{ forecast.period.temperatureUnit }}</span>
+        {{ forecast.feels_like_temperature or forecast.period.temperature
+        }}<span class="text-3xl sm:text-4xl text-white/50">°{{ forecast.feels_like_unit or forecast.period.temperatureUnit }}</span>
+      </p>
+      <p class="text-xs text-white/60 mt-2">
+        Actual {{ forecast.actual_temperature or forecast.period.temperature }}°{{
+        forecast.actual_temperature_unit or forecast.period.temperatureUnit }}
       </p>
       <p class="text-white/80 mt-3 text-lg">{{ forecast.period.shortForecast }}</p>
     </div>
