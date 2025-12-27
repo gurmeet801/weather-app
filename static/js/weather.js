@@ -26,6 +26,22 @@ const elements = {
   refreshCloseBtn: document.getElementById('refresh-close'),
   refreshLocationList: document.getElementById('refresh-location-list'),
   refreshStatus: document.getElementById('refresh-status'),
+  dailyForecastList: document.getElementById('daily-forecast-list'),
+  dayDetailModal: document.getElementById('day-detail-modal'),
+  dayDetailBackdrop: document.getElementById('day-detail-backdrop'),
+  dayDetailCloseBtn: document.getElementById('day-detail-close'),
+  dayDetailTitle: document.getElementById('day-detail-title'),
+  dayDetailSubtitle: document.getElementById('day-detail-subtitle'),
+  dayDetailSummary: document.getElementById('day-detail-summary'),
+  dayDetailHighLow: document.getElementById('day-detail-high-low'),
+  dayDetailFeelsLike: document.getElementById('day-detail-feels-like'),
+  dayDetailTempRange: document.getElementById('day-detail-temp-range'),
+  dayDetailPrecipRange: document.getElementById('day-detail-precip-range'),
+  dayDetailTempChart: document.getElementById('day-detail-temp-chart'),
+  dayDetailPrecipChart: document.getElementById('day-detail-precip-chart'),
+  dayDetailTimeAxis: document.getElementById('day-detail-time-axis'),
+  dayDetailCharts: document.getElementById('day-detail-charts'),
+  dayDetailEmpty: document.getElementById('day-detail-empty'),
 };
 
 // Configuration
@@ -40,6 +56,7 @@ const CONFIG = {
 
 // State
 let pendingSwitchLocation = null;
+let dailyDetailsMap = new Map();
 
 /**
  * Show a specific UI state and hide others
@@ -180,6 +197,271 @@ function closeRefreshModal() {
 }
 
 /**
+ * Open the day detail modal
+ */
+function openDayDetailModal(button) {
+  if (!button || !elements.dayDetailModal) return;
+  const dayKey = button.dataset.dayKey;
+  const summary = {
+    key: dayKey,
+    name: button.dataset.dayName,
+    dateLabel: button.dataset.dayDate,
+    summary: button.dataset.daySummary,
+    high: parseNumber(button.dataset.dayHigh),
+    low: parseNumber(button.dataset.dayLow),
+    unit: button.dataset.dayUnit || '',
+  };
+  const details = dailyDetailsMap.get(dayKey);
+
+  if (elements.dayDetailTitle) {
+    elements.dayDetailTitle.textContent = summary.name || 'Day Details';
+  }
+  if (elements.dayDetailSubtitle) {
+    elements.dayDetailSubtitle.textContent = summary.dateLabel || '';
+  }
+  if (elements.dayDetailSummary) {
+    elements.dayDetailSummary.textContent = summary.summary || '';
+    if (summary.summary) {
+      elements.dayDetailSummary.classList.remove('hidden');
+    } else {
+      elements.dayDetailSummary.classList.add('hidden');
+    }
+  }
+  if (elements.dayDetailHighLow) {
+    elements.dayDetailHighLow.textContent = formatHighLow(summary.high, summary.low, summary.unit);
+  }
+
+  if (!details || !details.hours || details.hours.length === 0) {
+    if (elements.dayDetailCharts) {
+      elements.dayDetailCharts.classList.add('hidden');
+    }
+    elements.dayDetailEmpty?.classList.remove('hidden');
+    elements.dayDetailFeelsLike && (elements.dayDetailFeelsLike.textContent = '');
+    elements.dayDetailTempRange && (elements.dayDetailTempRange.textContent = '');
+    elements.dayDetailPrecipRange && (elements.dayDetailPrecipRange.textContent = '');
+    elements.dayDetailTimeAxis && (elements.dayDetailTimeAxis.textContent = '');
+  } else {
+    elements.dayDetailEmpty?.classList.add('hidden');
+    elements.dayDetailCharts?.classList.remove('hidden');
+    renderDayCharts(details, summary.unit);
+  }
+
+  elements.dayDetailModal.classList.remove('hidden');
+}
+
+/**
+ * Close the day detail modal
+ */
+function closeDayDetailModal() {
+  elements.dayDetailModal?.classList.add('hidden');
+}
+
+function parseNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function formatHighLow(high, low, unit) {
+  const unitLabel = unit ? ` ${unit}` : '';
+  if (high == null && low == null) return '';
+  if (high != null && low != null) {
+    return `High ${high}${unitLabel} / Low ${low}${unitLabel}`;
+  }
+  if (high != null) {
+    return `High ${high}${unitLabel}`;
+  }
+  return `Low ${low}${unitLabel}`;
+}
+
+function renderDayCharts(details, unit) {
+  const hours = details.hours || [];
+  const temps = hours.map((hour) =>
+    Number.isFinite(hour.temperature) ? hour.temperature : null
+  );
+  const feels = hours.map((hour) =>
+    Number.isFinite(hour.feelsLike) ? hour.feelsLike : null
+  );
+  const precip = hours.map((hour) =>
+    Number.isFinite(hour.precipChance) ? hour.precipChance : null
+  );
+
+  const tempRange = getRange(temps);
+  const feelsRange = getRange(feels);
+  const precipRange = getRange(precip);
+  const detailUnit = unit || hours.find((hour) => hour.temperatureUnit)?.temperatureUnit || '';
+  const unitLabel = detailUnit ? ` ${detailUnit}` : '';
+
+  if (elements.dayDetailTempRange) {
+    if (tempRange) {
+      elements.dayDetailTempRange.textContent = `${tempRange.min}${unitLabel} - ${tempRange.max}${unitLabel}`;
+    } else {
+      elements.dayDetailTempRange.textContent = '';
+    }
+  }
+  if (elements.dayDetailFeelsLike) {
+    if (feelsRange) {
+      elements.dayDetailFeelsLike.textContent = `Feels like ${feelsRange.min}${unitLabel} - ${feelsRange.max}${unitLabel}`;
+    } else {
+      elements.dayDetailFeelsLike.textContent = '';
+    }
+  }
+  if (elements.dayDetailPrecipRange) {
+    if (precipRange) {
+      elements.dayDetailPrecipRange.textContent = `Peak ${Math.round(precipRange.max)}%`;
+    } else {
+      elements.dayDetailPrecipRange.textContent = '';
+    }
+  }
+
+  renderLineChart(elements.dayDetailTempChart, [
+    { values: temps, className: 'chart-line-temp' },
+    { values: feels, className: 'chart-line-feels' },
+  ]);
+  renderBarChart(elements.dayDetailPrecipChart, precip);
+  renderTimeAxis(elements.dayDetailTimeAxis, hours);
+}
+
+function getRange(values) {
+  const filtered = values.filter((value) => Number.isFinite(value));
+  if (!filtered.length) return null;
+  return {
+    min: Math.min(...filtered),
+    max: Math.max(...filtered),
+  };
+}
+
+function clearSvg(svg) {
+  if (!svg) return;
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
+}
+
+function renderLineChart(svg, series) {
+  if (!svg) return;
+  clearSvg(svg);
+  const width = 240;
+  const height = 80;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  const allValues = series
+    .flatMap((item) => item.values)
+    .filter((value) => Number.isFinite(value));
+  if (!allValues.length) return;
+
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  const range = maxValue - minValue || 1;
+  const count = series[0]?.values?.length || 0;
+
+  for (let i = 1; i < 4; i += 1) {
+    const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const y = (height / 4) * i;
+    gridLine.setAttribute('x1', '0');
+    gridLine.setAttribute('x2', `${width}`);
+    gridLine.setAttribute('y1', `${y}`);
+    gridLine.setAttribute('y2', `${y}`);
+    gridLine.setAttribute('class', 'chart-grid');
+    svg.appendChild(gridLine);
+  }
+
+  series.forEach((item) => {
+    const pathData = buildLinePath(item.values, count, width, height, minValue, range);
+    if (!pathData) return;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathData);
+    path.setAttribute('class', item.className);
+    svg.appendChild(path);
+  });
+}
+
+function buildLinePath(values, count, width, height, minValue, range) {
+  let path = '';
+  let started = false;
+  const total = count || values.length;
+  for (let i = 0; i < values.length; i += 1) {
+    const value = values[i];
+    if (!Number.isFinite(value)) {
+      started = false;
+      continue;
+    }
+    const x = total <= 1 ? width / 2 : (i / (total - 1)) * width;
+    const y = height - ((value - minValue) / range) * height;
+    if (!started) {
+      path += `M ${x} ${y}`;
+      started = true;
+    } else {
+      path += ` L ${x} ${y}`;
+    }
+  }
+  return path;
+}
+
+function renderBarChart(svg, values) {
+  if (!svg) return;
+  clearSvg(svg);
+  const width = 240;
+  const height = 80;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  const count = values.length;
+  if (!count) return;
+
+  for (let i = 1; i < 4; i += 1) {
+    const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const y = (height / 4) * i;
+    gridLine.setAttribute('x1', '0');
+    gridLine.setAttribute('x2', `${width}`);
+    gridLine.setAttribute('y1', `${y}`);
+    gridLine.setAttribute('y2', `${y}`);
+    gridLine.setAttribute('class', 'chart-grid');
+    svg.appendChild(gridLine);
+  }
+
+  const barWidth = width / count;
+  const gap = 2;
+  values.forEach((value, index) => {
+    if (!Number.isFinite(value)) return;
+    const clamped = Math.min(Math.max(value, 0), 100);
+    const barHeight = (clamped / 100) * height;
+    const x = index * barWidth + gap / 2;
+    const y = height - barHeight;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', `${x}`);
+    rect.setAttribute('y', `${y}`);
+    rect.setAttribute('width', `${Math.max(barWidth - gap, 1)}`);
+    rect.setAttribute('height', `${barHeight}`);
+    rect.setAttribute('rx', '1.5');
+    rect.setAttribute('class', 'chart-bar');
+    svg.appendChild(rect);
+  });
+}
+
+function renderTimeAxis(container, hours) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (!hours.length) return;
+  const step = Math.max(1, Math.round(hours.length / 5));
+  const labels = [];
+  for (let i = 0; i < hours.length; i += step) {
+    if (hours[i]?.time) {
+      labels.push(hours[i].time);
+    }
+  }
+  const lastLabel = hours[hours.length - 1]?.time;
+  if (lastLabel && labels[labels.length - 1] !== lastLabel) {
+    labels.push(lastLabel);
+  }
+  labels.forEach((label) => {
+    const span = document.createElement('span');
+    span.textContent = label;
+    container.appendChild(span);
+  });
+}
+/**
  * Handle refresh/delete actions for a location
  */
 async function handleRefreshAction(action, locationKey) {
@@ -233,7 +515,10 @@ function checkForLocationSwitch(coords) {
  * Initialize the application
  */
 function initWeatherApp(options = {}) {
-  const { hasWeatherData, usedCachedLocation, hasLocationParams } = options;
+  const { hasWeatherData, usedCachedLocation, hasLocationParams, dailyDetails } = options;
+  if (Array.isArray(dailyDetails)) {
+    dailyDetailsMap = new Map(dailyDetails.map((day) => [day.key, day]));
+  }
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {
@@ -271,6 +556,9 @@ function initWeatherApp(options = {}) {
     if (!elements.refreshModal?.classList.contains('hidden')) {
       closeRefreshModal();
     }
+    if (!elements.dayDetailModal?.classList.contains('hidden')) {
+      closeDayDetailModal();
+    }
   });
 
   elements.useCurrentLocationBtn?.addEventListener('click', () => {
@@ -291,6 +579,8 @@ function initWeatherApp(options = {}) {
   elements.refreshBtn?.addEventListener('click', openRefreshModal);
   elements.refreshModalBackdrop?.addEventListener('click', closeRefreshModal);
   elements.refreshCloseBtn?.addEventListener('click', closeRefreshModal);
+  elements.dayDetailBackdrop?.addEventListener('click', closeDayDetailModal);
+  elements.dayDetailCloseBtn?.addEventListener('click', closeDayDetailModal);
 
   elements.refreshLocationList?.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-refresh-action]');
@@ -298,6 +588,12 @@ function initWeatherApp(options = {}) {
     const action = button.dataset.refreshAction;
     const locationKey = button.dataset.locationKey;
     handleRefreshAction(action, locationKey);
+  });
+
+  elements.dailyForecastList?.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-day-key]');
+    if (!button) return;
+    openDayDetailModal(button);
   });
 }
 

@@ -1,11 +1,23 @@
-{# 8-Day Forecast Component #}
+{# 7-Day Forecast Component #}
 {# Variables: forecast (required) #}
 <div class="glass-card rounded-3xl p-6 flex-1">
-  <p class="text-white/50 text-xs uppercase tracking-widest mb-4">8-Day Forecast</p>
+  <p class="text-white/50 text-xs uppercase tracking-widest mb-4">7-Day Forecast</p>
   {% if forecast.daily_forecast %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+  <div id="daily-forecast-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
     {% for day in forecast.daily_forecast %}
-    <div class="glass-panel-subtle rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-white/15 transition-colors">
+    <button
+      type="button"
+      class="glass-panel-subtle rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-white/15 transition-colors text-left w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+      data-day-key="{{ day.key }}"
+      data-day-name="{{ day.name }}"
+      data-day-date="{{ day.date_label }}"
+      data-day-summary="{{ day.shortForecast | default('', true) }}"
+      data-day-high="{{ day.high | default('', true) }}"
+      data-day-low="{{ day.low | default('', true) }}"
+      data-day-unit="{{ day.temperatureUnit | default('', true) }}"
+      aria-haspopup="dialog"
+      aria-controls="day-detail-modal"
+    >
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium">{{ day.name }}</p>
         <p class="text-xs text-white/50 mt-0.5 truncate">{{ day.shortForecast }}</p>
@@ -18,7 +30,7 @@
           Low {% if day.low is not none %}{{ day.low }}{% else %}--{% endif %}°{{ day.temperatureUnit | default('', true) }}
         </p>
       </div>
-    </div>
+    </button>
     {% endfor %}
   </div>
   {% else %}

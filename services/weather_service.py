@@ -92,7 +92,7 @@ def build_hourly_today(periods):
     return hourly
 
 
-def build_daily_forecast(periods, limit=8):
+def build_daily_forecast(periods, limit=7):
     if not periods:
         return []
     grouped = {}
@@ -112,6 +112,8 @@ def build_daily_forecast(periods, limit=8):
         if day_key not in grouped:
             grouped[day_key] = {
                 "date": dt,
+                "key": day_key,
+                "date_label": dt.strftime("%a, %b %d"),
                 "name": dt.strftime("%a"),
                 "shortForecast": None,
                 "high": None,
@@ -154,6 +156,8 @@ def build_daily_forecast(periods, limit=8):
         low = entry.get("low") if entry.get("low") is not None else entry.get("all_low")
         daily.append(
             {
+                "key": entry.get("key"),
+                "date_label": entry.get("date_label"),
                 "name": entry.get("name") or entry["date"].strftime("%a"),
                 "shortForecast": entry.get("shortForecast"),
                 "high": high,
@@ -161,6 +165,66 @@ def build_daily_forecast(periods, limit=8):
                 "temperatureUnit": entry.get("temperatureUnit"),
             }
         )
+    return daily
+
+
+def build_daily_details(periods, limit=7):
+    if not periods:
+        return []
+    grouped = {}
+    order = []
+    today = None
+
+    for period in periods:
+        dt = parse_iso_datetime(period.get("startTime"))
+        if not dt:
+            continue
+        if today is None:
+            now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+            today = now.date()
+        if today and dt.date() < today:
+            continue
+
+        day_key = dt.date().isoformat()
+        if day_key not in grouped:
+            grouped[day_key] = {
+                "key": day_key,
+                "date_label": dt.strftime("%a, %b %d"),
+                "hours": [],
+            }
+            order.append(day_key)
+
+        temp = period.get("temperature")
+        unit = period.get("temperatureUnit")
+        temp_value = temp if isinstance(temp, (int, float)) else None
+        humidity = (period.get("relativeHumidity") or {}).get("value")
+        try:
+            humidity_value = float(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_value = None
+        wind_mph = _parse_wind_speed_mph(period.get("windSpeed"))
+        feels_like = _calculate_feels_like(temp_value, unit, humidity_value, wind_mph)
+        precip = (period.get("probabilityOfPrecipitation") or {}).get("value")
+        try:
+            precip_value = float(precip) if precip is not None else None
+        except (TypeError, ValueError):
+            precip_value = None
+
+        grouped[day_key]["hours"].append(
+            {
+                "time": format_hour_label(dt),
+                "hour": dt.hour,
+                "temperature": temp_value,
+                "temperatureUnit": unit,
+                "feelsLike": feels_like,
+                "precipChance": precip_value,
+                "shortForecast": period.get("shortForecast"),
+            }
+        )
+
+    daily = []
+    for day_key in order[:limit]:
+        daily.append(grouped[day_key])
     return daily
 
 
@@ -226,6 +290,7 @@ def fetch_forecast(lat_value, lon_value):
     hourly_today = []
     hourly_error = None
     hourly_periods = []
+    daily_details = []
     if hourly_url:
         try:
             hourly_data = cached_get_json(
@@ -236,6 +301,7 @@ def fetch_forecast(lat_value, lon_value):
             )
             hourly_periods = hourly_data.get("properties", {}).get("periods", [])
             hourly_today = build_hourly_today(hourly_periods)
+            daily_details = build_daily_details(hourly_periods)
         except requests.HTTPError:
             hourly_error = "Hourly forecast unavailable."
         except requests.RequestException:
@@ -302,6 +368,7 @@ def fetch_forecast(lat_value, lon_value):
         "next_period": periods[1] if len(periods) > 1 else None,
         "hourly_today": hourly_today,
         "hourly_error": hourly_error,
+        "daily_details": daily_details,
         "daily_forecast": build_daily_forecast(periods),
         "alerts": alerts,
         "alerts_error": alerts_error,
