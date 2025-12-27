@@ -20,11 +20,11 @@ def _normalize_zip(query):
 
 def geocode_address(address):
     if address is None:
-        return None, None, None, "Enter an address or ZIP code."
+        return None, None, None, None, None, "Enter an address or ZIP code."
 
     query = address.strip()
     if not query:
-        return None, None, None, "Enter an address or ZIP code."
+        return None, None, None, None, None, "Enter an address or ZIP code."
 
     zip_code = _normalize_zip(query)
 
@@ -59,18 +59,23 @@ def geocode_address(address):
                 cache_group="geocode",
             )
     except requests.HTTPError:
-        return None, None, None, "Geocoding service returned an error."
+        return None, None, None, None, None, "Geocoding service returned an error."
     except requests.RequestException:
-        return None, None, None, "Could not reach the geocoding service."
+        return None, None, None, None, None, "Could not reach the geocoding service."
 
     if not results:
-        return None, None, None, "No results found for that address or ZIP code."
+        return None, None, None, None, None, "No results found for that address or ZIP code."
 
     result = results[0]
     lat = result.get("lat")
     lon = result.get("lon")
     display_name = result.get("display_name")
     if not lat or not lon:
-        return None, None, None, "No coordinates returned for that address or ZIP code."
+        return None, None, None, None, None, "No coordinates returned for that address or ZIP code."
 
-    return lat, lon, display_name, None
+    # Extract city and state from address details
+    address_info = result.get("address", {})
+    city = address_info.get("city") or address_info.get("town") or address_info.get("village") or address_info.get("hamlet")
+    state = address_info.get("state")
+
+    return lat, lon, city, state, display_name, None

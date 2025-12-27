@@ -39,6 +39,10 @@ const elements = {
   dayDetailPrecipRange: document.getElementById('day-detail-precip-range'),
   dayDetailTempChart: document.getElementById('day-detail-temp-chart'),
   dayDetailPrecipChart: document.getElementById('day-detail-precip-chart'),
+  dayDetailTempTooltip: document.getElementById('day-detail-temp-tooltip'),
+  dayDetailPrecipTooltip: document.getElementById('day-detail-precip-tooltip'),
+  dayDetailTempMarker: document.getElementById('day-detail-temp-marker'),
+  dayDetailPrecipMarker: document.getElementById('day-detail-precip-marker'),
   dayDetailTimeAxis: document.getElementById('day-detail-time-axis'),
   dayDetailCharts: document.getElementById('day-detail-charts'),
   dayDetailEmpty: document.getElementById('day-detail-empty'),
@@ -57,6 +61,8 @@ const CONFIG = {
 // State
 let pendingSwitchLocation = null;
 let dailyDetailsMap = new Map();
+let currentDayDetails = null;
+let currentDayUnit = '';
 
 /**
  * Show a specific UI state and hide others
@@ -212,6 +218,9 @@ function openDayDetailModal(button) {
     unit: button.dataset.dayUnit || '',
   };
   const details = dailyDetailsMap.get(dayKey);
+  currentDayDetails = details || null;
+  currentDayUnit = summary.unit || '';
+  resetChartHover();
 
   if (elements.dayDetailTitle) {
     elements.dayDetailTitle.textContent = summary.name || 'Day Details';
@@ -254,6 +263,8 @@ function openDayDetailModal(button) {
  */
 function closeDayDetailModal() {
   elements.dayDetailModal?.classList.add('hidden');
+  resetChartHover();
+  currentDayDetails = null;
 }
 
 function parseNumber(value) {
@@ -291,6 +302,7 @@ function renderDayCharts(details, unit) {
   const precipRange = getRange(precip);
   const detailUnit = unit || hours.find((hour) => hour.temperatureUnit)?.temperatureUnit || '';
   const unitLabel = detailUnit ? ` ${detailUnit}` : '';
+  currentDayUnit = detailUnit;
 
   if (elements.dayDetailTempRange) {
     if (tempRange) {
@@ -320,6 +332,7 @@ function renderDayCharts(details, unit) {
   ]);
   renderBarChart(elements.dayDetailPrecipChart, precip);
   renderTimeAxis(elements.dayDetailTimeAxis, hours);
+  resetChartHover();
 }
 
 function getRange(values) {
@@ -461,6 +474,118 @@ function renderTimeAxis(container, hours) {
     container.appendChild(span);
   });
 }
+
+function resetChartHover() {
+  hideChartTooltip(elements.dayDetailTempTooltip, elements.dayDetailTempMarker);
+  hideChartTooltip(elements.dayDetailPrecipTooltip, elements.dayDetailPrecipMarker);
+}
+
+function hideChartTooltip(tooltip, marker) {
+  tooltip?.classList.add('hidden');
+  marker?.classList.add('hidden');
+}
+
+function showChartTooltip(tooltip, marker, container, x, text) {
+  if (!tooltip || !marker || !container) return;
+  tooltip.textContent = text;
+  tooltip.classList.remove('hidden');
+  marker.classList.remove('hidden');
+
+  const width = container.clientWidth || 1;
+  const markerX = Math.max(0, Math.min(x, width));
+  marker.style.left = `${markerX}px`;
+
+  const tooltipWidth = tooltip.offsetWidth || 0;
+  const halfWidth = tooltipWidth / 2;
+  const minLeft = halfWidth + 8;
+  const maxLeft = width - halfWidth - 8;
+  const tooltipX = Math.max(minLeft, Math.min(markerX, maxLeft));
+  tooltip.style.left = `${tooltipX}px`;
+}
+
+function getPointerEvent(event) {
+  if (event.touches && event.touches[0]) {
+    return event.touches[0];
+  }
+  if (event.changedTouches && event.changedTouches[0]) {
+    return event.changedTouches[0];
+  }
+  return event;
+}
+
+function getHoverPosition(event, container, count) {
+  const pointer = getPointerEvent(event);
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 1;
+  const rawX = pointer.clientX - rect.left;
+  const clampedX = Math.max(0, Math.min(rawX, width));
+  if (!count) {
+    return { index: 0, x: clampedX, width };
+  }
+  const ratio = width <= 1 ? 0 : clampedX / width;
+  const index = Math.max(0, Math.min(count - 1, Math.round(ratio * (count - 1))));
+  return { index, x: clampedX, width };
+}
+
+function formatTempValue(value, unit) {
+  if (!Number.isFinite(value)) {
+    return '--';
+  }
+  return unit ? `${value} ${unit}` : `${value}`;
+}
+
+function formatPrecipValue(value) {
+  if (!Number.isFinite(value)) {
+    return '--';
+  }
+  return `${Math.round(value)}%`;
+}
+
+function handleTempChartMove(event) {
+  if (!currentDayDetails || !elements.dayDetailTempChart) return;
+  const hours = currentDayDetails.hours || [];
+  if (!hours.length) return;
+  const container = elements.dayDetailTempChart.parentElement;
+  if (!container) return;
+
+  const position = getHoverPosition(event, container, hours.length);
+  const hour = hours[position.index] || {};
+  const unit = currentDayUnit || hour.temperatureUnit || '';
+  const timeLabel = hour.time ? `${hour.time} ` : '';
+  const tempText = formatTempValue(hour.temperature, unit);
+  const feelsText = formatTempValue(hour.feelsLike, unit);
+  const tooltipText = `${timeLabel}${tempText} / Feels ${feelsText}`;
+
+  showChartTooltip(
+    elements.dayDetailTempTooltip,
+    elements.dayDetailTempMarker,
+    container,
+    position.x,
+    tooltipText
+  );
+}
+
+function handlePrecipChartMove(event) {
+  if (!currentDayDetails || !elements.dayDetailPrecipChart) return;
+  const hours = currentDayDetails.hours || [];
+  if (!hours.length) return;
+  const container = elements.dayDetailPrecipChart.parentElement;
+  if (!container) return;
+
+  const position = getHoverPosition(event, container, hours.length);
+  const hour = hours[position.index] || {};
+  const timeLabel = hour.time ? `${hour.time} ` : '';
+  const precipText = formatPrecipValue(hour.precipChance);
+  const tooltipText = `${timeLabel}${precipText} chance of precipitation`;
+
+  showChartTooltip(
+    elements.dayDetailPrecipTooltip,
+    elements.dayDetailPrecipMarker,
+    container,
+    position.x,
+    tooltipText
+  );
+}
 /**
  * Handle refresh/delete actions for a location
  */
@@ -594,6 +719,19 @@ function initWeatherApp(options = {}) {
     const button = event.target.closest('button[data-day-key]');
     if (!button) return;
     openDayDetailModal(button);
+  });
+
+  const tempContainer = elements.dayDetailTempChart?.parentElement;
+  const precipContainer = elements.dayDetailPrecipChart?.parentElement;
+
+  tempContainer?.addEventListener('mousemove', handleTempChartMove);
+  tempContainer?.addEventListener('mouseleave', () => {
+    hideChartTooltip(elements.dayDetailTempTooltip, elements.dayDetailTempMarker);
+  });
+
+  precipContainer?.addEventListener('mousemove', handlePrecipChartMove);
+  precipContainer?.addEventListener('mouseleave', () => {
+    hideChartTooltip(elements.dayDetailPrecipTooltip, elements.dayDetailPrecipMarker);
   });
 }
 

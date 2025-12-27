@@ -6,12 +6,15 @@ import requests
 from utils import (
     cached_get_json,
     format_location_key,
+    format_coordinate_alias,
     format_alert_time,
     format_hour_label,
     get_weather_headers,
     location_group_key,
     parse_iso_datetime,
     register_location,
+    register_location_alias,
+    resolve_location_alias,
 )
 
 WEATHER_GOV_HEADERS = get_weather_headers()
@@ -242,16 +245,21 @@ def fetch_forecast(lat_value, lon_value):
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         return None, "Coordinates are out of range."
 
-    location_key = format_location_key(lat, lon)
-    cache_group = location_group_key(location_key)
+    # Create coordinate alias
+    coord_alias = format_coordinate_alias(lat, lon)
+    
+    # Check if we already have a canonical location for these coordinates
+    cached_location_key = resolve_location_alias(coord_alias)
+    
     points_url = f"https://api.weather.gov/points/{lat},{lon}"
 
     try:
+        # Use a temporary cache group for the points API call to get city/state
         points_data = cached_get_json(
             points_url,
             headers=WEATHER_GOV_HEADERS,
             ttl=12 * 60 * 60,
-            cache_group=cache_group,
+            cache_group="points_api",
         )
     except requests.HTTPError:
         return None, "Weather.gov returned an error for those coordinates."
@@ -263,6 +271,27 @@ def fetch_forecast(lat_value, lon_value):
     hourly_url = points_props.get("forecastHourly")
     if not forecast_url:
         return None, "No forecast URL available for that location."
+
+    # Extract city and state to create canonical location key
+    location_props = (
+        points_props.get("relativeLocation", {}).get("properties", {}) or {}
+    )
+    city = location_props.get("city")
+    state = location_props.get("state")
+    
+    if not city or not state:
+        return None, "Could not determine city and state for this location."
+    
+    # Create canonical location key from City, State
+    location_key = format_location_key(city, state)
+    location = f"{city}, {state}"
+    
+    # Register the coordinate alias to point to the canonical location
+    if coord_alias and location_key and (not cached_location_key or cached_location_key != location_key):
+        register_location_alias(coord_alias, location_key)
+    
+    # Use the canonical location key for caching
+    cache_group = location_group_key(location_key)
 
     try:
         forecast_data = cached_get_json(
@@ -279,13 +308,6 @@ def fetch_forecast(lat_value, lon_value):
     periods = forecast_data.get("properties", {}).get("periods", [])
     if not periods:
         return None, "No forecast periods available for that location."
-
-    location_props = (
-        points_props.get("relativeLocation", {}).get("properties", {}) or {}
-    )
-    city = location_props.get("city")
-    state = location_props.get("state")
-    location = f"{city}, {state}" if city and state else "Forecast location"
 
     hourly_today = []
     hourly_error = None
@@ -376,4 +398,5 @@ def fetch_forecast(lat_value, lon_value):
         "feels_like_unit": current_unit,
         "actual_temperature": current_temp,
         "actual_temperature_unit": current_unit,
+        "location_key": location_key,
     }, None

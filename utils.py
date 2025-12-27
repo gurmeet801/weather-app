@@ -29,13 +29,48 @@ def get_geocoder_headers():
     }
 
 
-def format_location_key(lat_value, lon_value):
+def format_location_key(city, state):
+    """Create a canonical location key from City, State."""
+    if not city or not state:
+        return None
+    # Normalize to "City, State" format
+    city = city.strip()
+    state = state.strip()
+    return f"{city}, {state}"
+
+
+def format_coordinate_alias(lat_value, lon_value):
+    """Create an alias key from lat/lon coordinates."""
     try:
         lat = float(lat_value)
         lon = float(lon_value)
     except (TypeError, ValueError):
         return None
-    return f"{lat:.4f},{lon:.4f}"
+    return f"coord:{lat:.4f},{lon:.4f}"
+
+
+def resolve_location_alias(alias_key):
+    """Resolve an alias (coordinates, zip, etc.) to canonical City, State location key."""
+    if not alias_key:
+        return None
+    with CACHE_LOCK:
+        cache = _load_cache_file()
+        _ensure_today(cache)
+        aliases = cache.get("aliases", {})
+        return aliases.get(alias_key)
+
+
+def register_location_alias(alias_key, canonical_key):
+    """Register an alias (coordinates, zip, etc.) to point to canonical City, State location."""
+    if not alias_key or not canonical_key:
+        return
+    with CACHE_LOCK:
+        cache = _load_cache_file()
+        _ensure_today(cache)
+        if "aliases" not in cache:
+            cache["aliases"] = {}
+        cache["aliases"][alias_key] = canonical_key
+        _write_cache_file(cache)
 
 
 def location_group_key(location_key):
@@ -56,21 +91,24 @@ def _today_key():
 
 
 def _empty_cache():
-    return {"meta": {"last_refresh_date": _today_key()}, "groups": {}, "locations": {}}
+    return {"meta": {"last_refresh_date": _today_key()}, "groups": {}, "locations": {}, "aliases": {}}
 
 
 def _normalize_cache(raw_cache):
     if not isinstance(raw_cache, dict):
         return _empty_cache()
     if "groups" not in raw_cache:
-        raw_cache = {"meta": {}, "groups": {"default": raw_cache}, "locations": {}}
+        raw_cache = {"meta": {}, "groups": {"default": raw_cache}, "locations": {}, "aliases": {}}
     raw_cache.setdefault("meta", {})
     raw_cache.setdefault("locations", {})
     raw_cache.setdefault("groups", {})
+    raw_cache.setdefault("aliases", {})
     if not isinstance(raw_cache.get("groups"), dict):
         raw_cache["groups"] = {}
     if not isinstance(raw_cache.get("locations"), dict):
         raw_cache["locations"] = {}
+    if not isinstance(raw_cache.get("aliases"), dict):
+        raw_cache["aliases"] = {}
     return raw_cache
 
 
@@ -79,6 +117,7 @@ def _ensure_today(cache):
     if cache.get("meta", {}).get("last_refresh_date") != today:
         cache["groups"] = {}
         cache["locations"] = {}
+        cache["aliases"] = {}
         cache["meta"]["last_refresh_date"] = today
         return True
     return False

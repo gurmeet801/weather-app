@@ -9,7 +9,9 @@ from utils import (
     clear_location_cache,
     delete_location_cache,
     format_location_key,
+    format_coordinate_alias,
     list_cached_locations,
+    register_location_alias,
 )
 
 app = Flask(__name__)
@@ -32,18 +34,27 @@ def index():
     if lat and lon:
         forecast, error = fetch_forecast(lat, lon)
         search_source = "Current location"
+        if forecast and not error:
+            current_location_key = forecast.get("location_key")
     elif address:
-        lat, lon, resolved_location, error = geocode_address(address)
+        lat, lon, city, state, resolved_location, error = geocode_address(address)
         search_source = "Address search"
         if not error:
             forecast, error = fetch_forecast(lat, lon)
+            if forecast and not error:
+                current_location_key = forecast.get("location_key")
+                # Register alias from address to canonical location
+                if city and state:
+                    address_alias = f"addr:{address.lower()}"
+                    canonical_key = format_location_key(city, state)
+                    register_location_alias(address_alias, canonical_key)
     elif cached_lat and cached_lon:
         lat, lon = cached_lat, cached_lon
         forecast, error = fetch_forecast(lat, lon)
         search_source = "Recent location"
         used_cached_location = True
-    if lat and lon:
-        current_location_key = format_location_key(lat, lon)
+        if forecast and not error:
+            current_location_key = forecast.get("location_key")
 
     cached_locations = list_cached_locations()
     response = make_response(
