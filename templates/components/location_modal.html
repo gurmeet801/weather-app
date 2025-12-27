@@ -34,6 +34,33 @@
         </svg>
         Use current location
       </button>
+
+      {% if cached_locations %}
+      <div class="mt-4">
+        <p class="text-white/50 text-xs uppercase tracking-widest mb-2">Saved locations</p>
+        <div id="location-suggestions" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+          {% for location in cached_locations %}
+          {% if location.lat is not none and location.lon is not none %}
+          <button
+            type="button"
+            class="glass-panel-subtle rounded-xl px-3 py-2 w-full flex items-center justify-between gap-3 text-left hover:bg-white/15 transition-colors"
+            data-location-lat="{{ location.lat }}"
+            data-location-lon="{{ location.lon }}"
+            data-location-label="{{ location.label }}"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate">{{ location.label }}</p>
+              <p class="text-xs text-white/50">{{ location.key }}</p>
+            </div>
+            {% if current_location_key and location.key == current_location_key %}
+            <span class="text-[10px] uppercase tracking-widest text-cyan-200/80">Current</span>
+            {% endif %}
+          </button>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </form>
   </div>
 </div>

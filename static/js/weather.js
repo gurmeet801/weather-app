@@ -20,6 +20,8 @@ const elements = {
   switchToCurrentBtn: document.getElementById('switch-to-current'),
   keepLocationBtn: document.getElementById('keep-location'),
   addressInput: document.getElementById('address'),
+  locationForm: document.getElementById('location-form'),
+  locationSuggestions: document.getElementById('location-suggestions'),
   refreshBtn: document.getElementById('refresh-weather'),
   refreshModal: document.getElementById('refresh-modal'),
   refreshModalBackdrop: document.getElementById('refresh-modal-backdrop'),
@@ -72,6 +74,13 @@ function showState(state) {
   elements.permissionState?.classList.add('hidden');
   elements.weatherState?.classList.add('hidden');
   state?.classList.remove('hidden');
+}
+
+function showLoading(message) {
+  if (elements.loadingText && message) {
+    elements.loadingText.textContent = message;
+  }
+  showState(elements.loadingState);
 }
 
 /**
@@ -669,6 +678,11 @@ function initWeatherApp(options = {}) {
   elements.toggleLocationBtn?.addEventListener('click', openModal);
   elements.closeModalBtn?.addEventListener('click', closeModal);
   elements.modalBackdrop?.addEventListener('click', closeModal);
+  elements.locationForm?.addEventListener('submit', () => {
+    closeModal();
+    const value = elements.addressInput?.value?.trim();
+    showLoading(value ? 'Searching location...' : 'Loading weather...');
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
@@ -695,6 +709,7 @@ function initWeatherApp(options = {}) {
     if (!pendingSwitchLocation) return;
     const coords = pendingSwitchLocation;
     closeSwitchModal();
+    showLoading('Switching to current location...');
     redirectToLocation(coords);
   });
 
@@ -719,6 +734,18 @@ function initWeatherApp(options = {}) {
     const button = event.target.closest('button[data-day-key]');
     if (!button) return;
     openDayDetailModal(button);
+  });
+
+  elements.locationSuggestions?.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-location-lat]');
+    if (!button) return;
+    const lat = Number(button.dataset.locationLat);
+    const lon = Number(button.dataset.locationLon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    closeModal();
+    const label = button.dataset.locationLabel;
+    showLoading(label ? `Switching to ${label}...` : 'Switching location...');
+    redirectToLocation({ lat, lon });
   });
 
   const tempContainer = elements.dayDetailTempChart?.parentElement;
