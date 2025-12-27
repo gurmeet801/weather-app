@@ -1,0 +1,26 @@
+{
+  "name": "Weather",
+  "short_name": "Weather",
+  "description": "Local weather forecasts, alerts, and hourly details.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#061b4d",
+  "theme_color": "#0a3d8f",
+  "categories": ["weather"],
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

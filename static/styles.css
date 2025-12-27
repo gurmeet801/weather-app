@@ -546,6 +546,187 @@ h3 {
   }
 }
 
+/* ===================================
+   Mobile Optimizations (Samsung S25 Ultra)
+   Screen: 3120 x 1440px, 6.9", 19.5:9 aspect ratio
+   =================================== */
+
+/* Safe area insets for notch/camera cutout */
+@supports (padding: max(0px)) {
+  .pt-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .px-safe {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+}
+
+/* Extra small breakpoint for narrow phones */
+@media (min-width: 360px) {
+  .xs\:inline {
+    display: inline;
+  }
+}
+
+/* Mobile typography adjustments */
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Larger touch targets (minimum 44x44px) */
+  button, 
+  [role="button"],
+  input,
+  select,
+  textarea,
+  a {
+    min-height: 44px;
+  }
+  
+  /* Better text rendering on mobile */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Optimize scrolling */
+  .hourly-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  
+  .hourly-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Modal optimizations */
+  .modal-content {
+    margin: 0.75rem;
+    max-height: calc(100vh - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+  }
+  
+  /* Card touch feedback */
+  .glass-panel-subtle:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+  }
+  
+  /* Button active states */
+  .btn-primary:active {
+    transform: scale(0.97);
+    box-shadow: 0 5px 15px rgba(18, 120, 255, 0.25);
+  }
+  
+  .btn-secondary:active {
+    background: rgba(255, 255, 255, 0.22);
+    transform: scale(0.97);
+  }
+  
+  /* Reduced motion for battery savings */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Tall phone optimizations (S25 Ultra aspect ratio ~19.5:9) */
+@media (max-width: 640px) and (min-aspect-ratio: 18/9) {
+  /* More vertical space utilization */
+  .glass-card {
+    border-radius: 1rem;
+  }
+  
+  /* Compact vertical spacing */
+  main {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* High DPI display optimization */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .glass-card,
+  .glass-panel,
+  .glass-panel-subtle {
+    border-width: 0.5px;
+  }
+}
+
+/* Dark mode / AMOLED optimizations */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+  
+  /* Pure black backgrounds save battery on AMOLED */
+  body {
+    background-color: #000;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+  main {
+    padding: 0.75rem 1rem;
+  }
+  
+  .modal-content {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+}
+
+/* Line clamp utilities for mobile */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Scroll snap for hourly forecast */
+.snap-x {
+  scroll-snap-type: x mandatory;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+.snap-mandatory {
+  scroll-snap-type: x mandatory;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .orb,
   .fade-up,

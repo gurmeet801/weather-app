@@ -2,13 +2,13 @@
 {# Variables: cached_locations (optional), current_location_key (optional) #}
 <div id="refresh-modal" class="modal-overlay hidden">
   <div class="modal-backdrop" id="refresh-modal-backdrop"></div>
-  <div class="modal-content glass-card rounded-2xl p-6 w-full max-w-lg mx-4">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="text-lg font-medium">Refresh cached data</h3>
-        <p class="text-white/60 text-xs mt-1">Pick a location to refresh or delete cached data.</p>
+  <div class="modal-content glass-card rounded-2xl p-4 sm:p-6 w-full max-w-lg mx-3 sm:mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-start justify-between gap-3 mb-4">
+      <div class="flex-1 min-w-0">
+        <h3 class="text-base sm:text-lg font-medium">Refresh cached data</h3>
+        <p class="text-white/60 text-[11px] sm:text-xs mt-1">Pick a location to refresh or delete.</p>
       </div>
-      <button id="refresh-close" class="text-white/50 hover:text-white/80 transition-colors p-1 rounded-lg hover:bg-white/10">
+      <button id="refresh-close" class="text-white/50 hover:text-white/80 active:text-white transition-colors p-2 -mr-2 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -16,22 +16,24 @@
     </div>
 
     {% if cached_locations %}
-    <div id="refresh-location-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+    <div id="refresh-location-list" class="space-y-2 overflow-y-auto pr-1 -mr-1 flex-1">
       {% for location in cached_locations %}
-      <div class="glass-panel-subtle rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <div class="flex items-center gap-2">
-            <p class="text-sm font-medium">{{ location.label }}</p>
-            {% if current_location_key and location.key == current_location_key %}
-            <span class="text-[10px] uppercase tracking-widest text-cyan-200/80">Current</span>
-            {% endif %}
+      <div class="glass-panel-subtle rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-[13px] sm:text-sm font-medium">{{ location.label }}</p>
+              {% if current_location_key and location.key == current_location_key %}
+              <span class="text-[9px] sm:text-[10px] uppercase tracking-widest text-cyan-200/80">Current</span>
+              {% endif %}
+            </div>
+            <p class="text-[11px] sm:text-xs text-white/50 truncate">{{ location.key }}</p>
           </div>
-          <p class="text-xs text-white/50">{{ location.key }}</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex gap-2">
           <button
             type="button"
-            class="btn-secondary rounded-lg px-3 py-2 text-xs"
+            class="btn-secondary rounded-lg px-3 py-2.5 text-[13px] sm:text-xs flex-1 min-h-[44px]"
             data-refresh-action="refresh"
             data-location-key="{{ location.key }}"
           >
@@ -39,7 +41,7 @@
           </button>
           <button
             type="button"
-            class="btn-secondary rounded-lg px-3 py-2 text-xs"
+            class="btn-secondary rounded-lg px-3 py-2.5 text-[13px] sm:text-xs flex-1 min-h-[44px]"
             data-refresh-action="delete"
             data-location-key="{{ location.key }}"
           >
@@ -50,9 +52,9 @@
       {% endfor %}
     </div>
     {% else %}
-    <p class="text-xs text-white/60">No cached locations yet.</p>
+    <p class="text-[13px] sm:text-xs text-white/60">No cached locations yet.</p>
     {% endif %}
 
-    <p id="refresh-status" class="text-xs text-rose-200 mt-4 hidden"></p>
+    <p id="refresh-status" class="text-[11px] sm:text-xs text-rose-200 mt-4 hidden"></p>
   </div>
 </div>

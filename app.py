@@ -17,6 +17,20 @@ from utils import (
 app = Flask(__name__)
 
 
+@app.route("/manifest.webmanifest")
+def manifest():
+    response = make_response(app.send_static_file("manifest.webmanifest"))
+    response.headers["Content-Type"] = "application/manifest+json"
+    return response
+
+
+@app.route("/sw.js")
+def service_worker():
+    response = make_response(app.send_static_file("sw.js"))
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.route("/")
 def index():
     address = request.args.get("address", "").strip()

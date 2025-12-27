@@ -2,9 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0a3d8f" />
+    <meta name="description" content="Local weather forecasts, alerts, and hourly details." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Weather" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>{% block title %}Weather{% endblock %}</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}" />
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}" />
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='icons/icon-512.png') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,7 +37,7 @@
       <!-- Weather Animation Effects Container -->
       <div id="weather-effects" class="weather-effects"></div>
 
-      <main class="relative w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main class="relative w-full max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-12 pb-safe">
         {% block content %}{% endblock %}
       </main>
     </div>

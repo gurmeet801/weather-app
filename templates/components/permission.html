@@ -1,17 +1,17 @@
 {# Permission Request Component #}
 <div id="permission-state" class="fixed inset-0 flex items-center justify-center z-50 hidden">
-  <div class="glass-card rounded-3xl p-8 text-center fade-up max-w-sm mx-4">
-    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-      <svg class="w-8 h-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center fade-up max-w-sm mx-3 sm:mx-4">
+    <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-white/10 flex items-center justify-center">
+      <svg class="w-7 h-7 sm:w-8 sm:h-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
       </svg>
     </div>
-    <h2 class="text-xl font-semibold mb-2">Location Access</h2>
-    <p class="text-white/60 text-sm mb-6">Allow location access to see weather for your area</p>
-    <button id="grant-location" class="btn-primary w-full rounded-2xl px-5 py-3 text-sm">
+    <h2 class="text-lg sm:text-xl font-semibold mb-2">Location Access</h2>
+    <p class="text-white/60 text-[13px] sm:text-sm mb-5 sm:mb-6">Allow location access to see weather for your area</p>
+    <button id="grant-location" class="btn-primary w-full rounded-xl sm:rounded-2xl px-5 py-3.5 sm:py-3 text-[15px] sm:text-sm min-h-[48px]">
       Enable Location
     </button>
-    <p id="permission-error" class="text-rose-300 text-xs mt-4 hidden"></p>
+    <p id="permission-error" class="text-rose-300 text-[11px] sm:text-xs mt-3 sm:mt-4 hidden"></p>
   </div>
 </div>

@@ -1,16 +1,16 @@
 {# Weather Alerts Component #}
 {# Variables: forecast (required) #}
 {% if forecast.alerts %}
-<div class="mb-6 space-y-3">
+<div class="mb-4 sm:mb-6 space-y-2 sm:space-y-3">
   {% for alert in forecast.alerts %}
-  <div class="alert-card glass-card rounded-2xl p-4 border-l-4 
+  <div class="alert-card glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 border-l-4 
     {% if alert.severity == 'Extreme' %}border-l-red-500 bg-red-500/10
     {% elif alert.severity == 'Severe' %}border-l-orange-500 bg-orange-500/10
     {% elif alert.severity == 'Moderate' %}border-l-yellow-500 bg-yellow-500/10
     {% else %}border-l-blue-400 bg-blue-400/10{% endif %}">
-    <div class="flex items-start gap-3">
+    <div class="flex items-start gap-2.5 sm:gap-3">
       <div class="flex-shrink-0 mt-0.5">
-        <svg class="w-5 h-5 
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 
           {% if alert.severity == 'Extreme' %}text-red-400
           {% elif alert.severity == 'Severe' %}text-orange-400
           {% elif alert.severity == 'Moderate' %}text-yellow-400
@@ -19,22 +19,22 @@
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <span class="inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-full mb-1
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
+          <div class="flex-1 min-w-0">
+            <span class="inline-block px-2 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-wider rounded-full mb-1
               {% if alert.severity == 'Extreme' %}bg-red-500/30 text-red-200
               {% elif alert.severity == 'Severe' %}bg-orange-500/30 text-orange-200
               {% elif alert.severity == 'Moderate' %}bg-yellow-500/30 text-yellow-200
               {% else %}bg-blue-400/30 text-blue-200{% endif %}">
               {{ alert.severity }}
             </span>
-            <p class="font-medium text-sm leading-tight">{{ alert.title }}</p>
+            <p class="font-medium text-[13px] sm:text-sm leading-tight">{{ alert.title }}</p>
             {% if alert.area %}
-            <p class="text-xs text-white/50 mt-1">{{ alert.area }}</p>
+            <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 truncate">{{ alert.area }}</p>
             {% endif %}
           </div>
           {% if alert.ends %}
-          <p class="text-xs text-white/50 whitespace-nowrap">Until {{ alert.ends }}</p>
+          <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">Until {{ alert.ends }}</p>
           {% endif %}
         </div>
       </div>
@@ -43,7 +43,7 @@
   {% endfor %}
 </div>
 {% elif forecast.alerts_error %}
-<div class="mb-6 glass-card rounded-2xl p-3 border border-rose-300/20 bg-rose-500/5">
-  <p class="text-rose-200 text-xs text-center">{{ forecast.alerts_error }}</p>
+<div class="mb-4 sm:mb-6 glass-card rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-rose-300/20 bg-rose-500/5">
+  <p class="text-rose-200 text-[11px] sm:text-xs text-center">{{ forecast.alerts_error }}</p>
 </div>
 {% endif %}

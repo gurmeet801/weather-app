@@ -1,13 +1,13 @@
 {# 7-Day Forecast Component #}
 {# Variables: forecast (required) #}
-<div class="glass-card rounded-3xl p-6 flex-1">
-  <p class="text-white/50 text-xs uppercase tracking-widest mb-4">7-Day Forecast</p>
+<div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1">
+  <p class="text-white/50 text-[10px] sm:text-xs uppercase tracking-widest mb-3 sm:mb-4">7-Day Forecast</p>
   {% if forecast.daily_forecast %}
-  <div id="daily-forecast-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+  <div id="daily-forecast-list" class="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
     {% for day in forecast.daily_forecast %}
     <button
       type="button"
-      class="glass-panel-subtle rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-white/15 transition-colors text-left w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+      class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 hover:bg-white/15 active:bg-white/20 transition-colors text-left w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-h-[60px] sm:min-h-0"
       data-day-key="{{ day.key }}"
       data-day-name="{{ day.name }}"
       data-day-date="{{ day.date_label }}"
@@ -19,23 +19,23 @@
       aria-controls="day-detail-modal"
     >
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium">{{ day.name }}</p>
-        <p class="text-xs text-white/50 mt-0.5 truncate">{{ day.shortForecast }}</p>
+        <p class="text-[13px] sm:text-sm font-medium">{{ day.name }}</p>
+        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 truncate">{{ day.shortForecast }}</p>
       </div>
-      <div class="text-right">
-        <p class="text-xl font-semibold leading-none">
-          {% if day.high is not none %}{{ day.high }}{% else %}--{% endif %}<span class="text-sm text-white/50">°{{ day.temperatureUnit | default('', true) }}</span>
+      <div class="text-right flex-shrink-0">
+        <p class="text-lg sm:text-xl font-semibold leading-none">
+          {% if day.high is not none %}{{ day.high }}{% else %}--{% endif %}<span class="text-[11px] sm:text-sm text-white/50">°{{ day.temperatureUnit | default('', true) }}</span>
         </p>
-        <p class="text-xs text-white/50 mt-1">
-          Low {% if day.low is not none %}{{ day.low }}{% else %}--{% endif %}°{{ day.temperatureUnit | default('', true) }}
+        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1">
+          Lo {% if day.low is not none %}{{ day.low }}{% else %}--{% endif %}°
         </p>
       </div>
     </button>
     {% endfor %}
   </div>
   {% else %}
-  <div class="glass-panel-subtle rounded-xl p-4 text-center">
-    <p class="text-white/50 text-sm">Extended forecast unavailable</p>
+  <div class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+    <p class="text-white/50 text-[13px] sm:text-sm">Extended forecast unavailable</p>
   </div>
   {% endif %}
 </div>
