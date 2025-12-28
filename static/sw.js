@@ -1,22 +1,41 @@
-const CACHE_NAME = 'weather-shell-v1';
-const RUNTIME_CACHE = 'weather-runtime-v1';
+const SW_VERSION = new URL(self.location.href).searchParams.get('v') || 'v1';
+const CACHE_NAME = `weather-shell-${SW_VERSION}`;
+const RUNTIME_CACHE = `weather-runtime-${SW_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
   '/static/styles.css',
   '/static/js/weather.js',
-  '/static/manifest.webmanifest',
+  '/manifest.webmanifest',
   '/static/offline.html',
   '/static/icons/icon-180.png',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',
 ];
 
+const VERSIONED_URLS = new Set([
+  '/',
+  '/static/styles.css',
+  '/static/js/weather.js',
+  '/manifest.webmanifest',
+  '/static/offline.html',
+]);
+
+const PRECACHE_REQUESTS = PRECACHE_URLS.map((url) => {
+  if (!VERSIONED_URLS.has(url)) {
+    return url;
+  }
+  if (url.includes('?')) {
+    return `${url}&v=${SW_VERSION}`;
+  }
+  return `${url}?v=${SW_VERSION}`;
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => cache.addAll(PRECACHE_REQUESTS))
       .then(() => self.skipWaiting())
   );
 });
@@ -56,7 +75,7 @@ function networkFirst(request) {
     .catch(() =>
       caches.match(request, { ignoreSearch: true }).then((cached) => {
         if (cached) return cached;
-        return caches.match('/static/offline.html');
+        return caches.match('/static/offline.html', { ignoreSearch: true });
       })
     );
 }

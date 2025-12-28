@@ -1195,7 +1195,9 @@ window.WeatherApp = {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
+    const assetVersion = document.documentElement?.dataset?.assetVersion;
+    const swUrl = assetVersion ? `/sw.js?v=${encodeURIComponent(assetVersion)}` : '/sw.js';
+    navigator.serviceWorker.register(swUrl).catch((error) => {
       console.warn('Service worker registration failed', error);
     });
   });

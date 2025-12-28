@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from flask import Flask, make_response, render_template, request
 
@@ -15,6 +16,33 @@ from utils import (
 )
 
 app = Flask(__name__)
+
+STATIC_VERSION_FILES = (
+    Path(__file__).resolve().parent / "static" / "styles.css",
+    Path(__file__).resolve().parent / "static" / "js" / "weather.js",
+    Path(__file__).resolve().parent / "static" / "sw.js",
+    Path(__file__).resolve().parent / "static" / "manifest.webmanifest",
+)
+
+
+def _asset_version():
+    mtimes = []
+    for path in STATIC_VERSION_FILES:
+        try:
+            mtimes.append(path.stat().st_mtime)
+        except OSError:
+            continue
+    if not mtimes:
+        return "1"
+    return str(int(max(mtimes)))
+
+
+ASSET_VERSION = _asset_version()
+
+
+@app.context_processor
+def inject_asset_version():
+    return {"asset_version": ASSET_VERSION}
 
 
 @app.route("/manifest.webmanifest")
