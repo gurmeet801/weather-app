@@ -338,12 +338,42 @@ textarea {
   color: var(--text-secondary);
 }
 
-.now-header {
+/* Now Card - Main Content Layout */
+.now-content {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.now-primary {
+  display: flex;
+  align-items: center;
   gap: 16px;
+}
+
+.now-icon-wrapper {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.now-icon {
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+}
+
+.now-temp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .now-temp {
@@ -353,14 +383,25 @@ textarea {
   line-height: 1;
 }
 
-.now-sub {
-  font-size: 1rem;
+.now-condition {
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--text-secondary);
-  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.now-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.now-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
 }
 
 .now-advisory {
-  margin-top: 8px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -372,27 +413,28 @@ textarea {
   animation: advisoryBlink 1.2s ease-in-out infinite;
 }
 
-.now-icon {
-  width: 70px;
-  height: 70px;
-  color: var(--accent);
-  opacity: 0.9;
-}
+/* Desktop: Two-column layout */
+@media (min-width: 480px) {
+  .now-content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.now-aside {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: 0;
-  text-align: right;
-}
+  .now-secondary {
+    text-align: right;
+    align-items: flex-end;
+  }
 
-.now-condition {
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin: 0;
-  overflow-wrap: anywhere;
+  .now-icon-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+
+  .now-icon {
+    width: 50px;
+    height: 50px;
+  }
 }
 
 @keyframes advisoryBlink {
@@ -721,19 +763,14 @@ textarea {
     margin-bottom: 10px;
   }
 
-  .now-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .now-aside {
-    align-items: flex-start;
-    text-align: left;
+  .now-icon-wrapper {
+    width: 64px;
+    height: 64px;
   }
 
   .now-icon {
-    width: 56px;
-    height: 56px;
+    width: 40px;
+    height: 40px;
   }
 
   .now-sub {

@@ -1,5 +1,6 @@
 {# Current Weather Card Component #}
 {# Variables: forecast (required) #}
+{% from "components/_weather_icons.html" import get_weather_icon %}
 {% set feels_value = forecast.feels_like_temperature or forecast.period.temperature %}
 {% set actual_value = forecast.actual_temperature or forecast.period.temperature %}
 {% set unit = forecast.feels_like_unit or forecast.period.temperatureUnit %}
@@ -12,19 +13,21 @@
   {% endfor %}
 {% endif %}
 <section class="card now-card" style="--delay: 0.05s;">
-  <div class="now-header">
-    <div>
-      <div class="now-temp">{{ feels_value }}&deg;</div>
+  <div class="now-content">
+    <div class="now-primary">
+      <div class="now-icon-wrapper">
+        {{ get_weather_icon(forecast.period.shortForecast, forecast.period.isDaytime) }}
+      </div>
+      <div class="now-temp-group">
+        <div class="now-temp">{{ feels_value }}&deg;</div>
+        <div class="now-condition">{{ forecast.period.shortForecast }}</div>
+      </div>
+    </div>
+    <div class="now-secondary">
       <div class="now-sub">Actual {{ actual_value }}&deg;{{ unit }}</div>
       {% if advisory.found %}
       <div class="now-advisory advisory-blink">See advisory below</div>
       {% endif %}
-    </div>
-    <div class="now-aside">
-      <svg class="now-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M3 15h18v2H3v-2zm0 4h18v2H3v-2zm0-8h18v2H3v-2zm0-4h14v2H3V7z"/>
-      </svg>
-      <div class="now-condition">{{ forecast.period.shortForecast }}</div>
     </div>
   </div>
   <div class="stats-grid">
