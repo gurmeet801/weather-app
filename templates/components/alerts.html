@@ -1,83 +1,95 @@
 {# Weather Alerts Component #}
 {# Variables: forecast (required) #}
 {% if forecast.alerts %}
-<div class="mb-4 sm:mb-6 space-y-2 sm:space-y-3">
+<div class="alerts-stack">
   {% for alert in forecast.alerts %}
-  <div class="alert-card glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 border-l-4 
-    {% if alert.severity == 'Extreme' %}border-l-red-500 bg-red-500/10
-    {% elif alert.severity == 'Severe' %}border-l-orange-500 bg-orange-500/10
-    {% elif alert.severity == 'Moderate' %}border-l-yellow-500 bg-yellow-500/10
-    {% else %}border-l-blue-400 bg-blue-400/10{% endif %}">
-    <div class="flex items-start gap-2.5 sm:gap-3">
-      <div class="flex-shrink-0 mt-0.5">
-        <svg class="w-4 h-4 sm:w-5 sm:h-5 
-          {% if alert.severity == 'Extreme' %}text-red-400
-          {% elif alert.severity == 'Severe' %}text-orange-400
-          {% elif alert.severity == 'Moderate' %}text-yellow-400
-          {% else %}text-blue-300{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="alert-main{% if alert.start and alert.ends and alert.start_iso and alert.end_iso %} has-validity{% endif %}">
-          <div class="alert-main__left">
-            <span class="inline-block px-2 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-wider rounded-full mb-1
-              {% if alert.severity == 'Extreme' %}bg-red-100 text-red-800
-              {% elif alert.severity == 'Severe' %}bg-orange-100 text-orange-800
-              {% elif alert.severity == 'Moderate' %}bg-yellow-100 text-yellow-800
-              {% else %}bg-blue-100 text-blue-800{% endif %}">
-              {{ alert.severity }}
-            </span>
-            <p class="font-medium text-[13px] sm:text-sm leading-tight">{{ alert.title }}</p>
+  <article class="alert-modern alert-modern--{{ alert.severity_slug }}">
+    <div class="alert-modern__header">
+      <div class="alert-modern__badge">
+        <div class="alert-modern__icon">
+          <svg class="alert-modern__icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div class="alert-modern__text">
+          <div class="alert-modern__title-row">
+            <h3 class="alert-modern__title">{{ alert.event }}</h3>
+            <span class="alert-modern__pill">{{ alert.severity or "Unknown" }}</span>
           </div>
-          {% if alert.start and alert.ends and alert.start_iso and alert.end_iso %}
-          <div class="alert-main__right">
-            <div class="alert-validity" aria-label="Alert valid time">
-              <div class="alert-validity__labels">
-                <span>Start</span>
-                <span>End</span>
-              </div>
-              <div
-                class="alert-validity__bar"
-                data-alert-start="{{ alert.start_iso | e }}"
-                data-alert-end="{{ alert.end_iso | e }}"
-              >
-                <span class="alert-validity__marker" aria-hidden="true"></span>
-              </div>
-              <div class="alert-validity__times">
-                <span>{{ alert.start }}</span>
-                <span>{{ alert.ends }}</span>
-              </div>
-            </div>
-          </div>
+          {% if alert.sent and alert.issuer %}
+          <p class="alert-modern__issuer">Issued {{ alert.sent }} by {{ alert.issuer }}</p>
+          {% elif alert.sent %}
+          <p class="alert-modern__issuer">Issued {{ alert.sent }}</p>
+          {% elif alert.issuer %}
+          <p class="alert-modern__issuer">Issued by {{ alert.issuer }}</p>
           {% endif %}
         </div>
-        {% if alert.description %}
-        <p class="alert-description text-[11px] sm:text-xs text-white/70 mt-1 leading-relaxed">{{ alert.description }}</p>
-        {% endif %}
-        {% if alert.areas %}
-        <div class="alert-areas w-full">
-          <div class="alert-areas__header">
-            <span class="alert-areas__label">Affected counties within 50 miles of current location</span>
+      </div>
+      {% if alert.start and alert.ends and alert.start_iso and alert.end_iso %}
+      <div class="alert-modern__valid">
+        <div class="alert-validity" aria-label="Alert valid time">
+          <div class="alert-validity__labels">
+            <span>Start</span>
+            <span>End</span>
           </div>
-          <div class="alert-areas__list">
-            {% for area in alert.areas %}
-            <span
-              class="alert-area-chip{% if area.is_closest %} is-closest{% endif %}{% if area.distance_mi is none %} is-muted{% endif %}"
-              {% if area.color and area.text_color %}style="--area-accent: {{ area.color }}; --area-accent-text: {{ area.text_color }};"{% endif %}
-            >
-              <span class="alert-area-chip__name">{{ area.name }}{% if area.distance_mi is none %}*{% endif %}</span>
-              {% if area.distance_mi is not none %}
-              <span class="alert-area-chip__distance">{{ area.distance_mi }} mi</span>
-              {% endif %}
-            </span>
-            {% endfor %}
+          <div
+            class="alert-validity__bar"
+            data-alert-start="{{ alert.start_iso | e }}"
+            data-alert-end="{{ alert.end_iso | e }}"
+          >
+            <span class="alert-validity__marker" aria-hidden="true"></span>
+          </div>
+          <div class="alert-validity__times">
+            <span>{{ alert.start }}</span>
+            <span>{{ alert.ends }}</span>
           </div>
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% if alert.what or alert.impacts or alert.description %}
+    <div class="alert-modern__sections">
+      {% if alert.what %}
+      <div class="alert-modern__section">
+        <div class="alert-modern__section-label">What</div>
+        <p class="alert-modern__section-text">{{ alert.what }}</p>
+      </div>
+      {% endif %}
+      {% if alert.impacts %}
+      <div class="alert-modern__section">
+        <div class="alert-modern__section-label">Impacts</div>
+        <p class="alert-modern__section-text">{{ alert.impacts }}</p>
+      </div>
+      {% endif %}
+      {% if not alert.what and not alert.impacts and alert.description %}
+      <div class="alert-modern__section alert-modern__section--full">
+        <div class="alert-modern__section-label">What</div>
+        <p class="alert-modern__section-text">{{ alert.description }}</p>
+      </div>
+      {% elif alert.description %}
+      <div class="alert-modern__section alert-modern__section--full">
+        <div class="alert-modern__section-label">Details</div>
+        <p class="alert-modern__section-text">{{ alert.description }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if alert.areas %}
+    <div class="alert-modern__areas">
+      <div class="alert-modern__areas-header">
+        <span class="alert-modern__areas-label">Affected counties within 50 miles of current location</span>
+      </div>
+      <div class="alert-modern__areas-list">
+        {% for area in alert.areas %}
+        <span class="alert-modern__area-tag{% if area.is_closest %} is-closest{% endif %}">
+          <span class="alert-modern__area-name">{{ area.name }}</span>
+          <span class="alert-modern__area-distance">{{ area.distance_mi }} mi</span>
+        </span>
+        {% endfor %}
       </div>
     </div>
-  </div>
+    {% endif %}
+  </article>
   {% endfor %}
 </div>
 {% elif forecast.alerts_error %}

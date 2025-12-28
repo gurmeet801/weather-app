@@ -385,30 +385,82 @@ _ALERT_SECTION_RE = re.compile(
 )
 
 
-def _strip_alert_sections(text, remove_headers=None):
+def _parse_alert_description(text):
     raw = _alert_text_raw(text)
     if raw is None:
-        return None
-    remove_headers = {header.lower() for header in (remove_headers or [])}
+        return None, None, None
+
     normalized = raw.replace("\r\n", "\n").replace("\r", "\n")
     lines = normalized.split("\n")
-    cleaned_lines = []
-    skipping = False
+    sections = []
+    current_header = None
+    current_lines = []
+    current_raw = []
+
+    def flush_section():
+        if current_header is None and not current_raw:
+            return
+        sections.append(
+            {
+                "header": current_header,
+                "text": "\n".join(current_lines).strip(),
+                "raw": "\n".join(current_raw).rstrip(),
+            }
+        )
+
     for line in lines:
         match = _ALERT_SECTION_RE.match(line)
         if match:
-            header = match.group(1).strip().lower()
-            if header in remove_headers:
-                skipping = True
-                continue
-            skipping = False
-            cleaned_lines.append(line)
+            flush_section()
+            current_header = match.group(1).strip().lower()
+            current_lines = []
+            current_raw = [line]
+            remainder = line[match.end():].strip()
+            if remainder:
+                current_lines.append(remainder)
             continue
-        if skipping:
+        current_raw.append(line)
+        current_lines.append(line)
+
+    flush_section()
+
+    if not sections:
+        return None, None, raw if raw.strip() else None
+
+    remove_headers = {"when", "where"}
+    what_headers = {"what", "hazard"}
+    impacts_headers = {"impact", "impacts"}
+    what_parts = []
+    impacts_parts = []
+    detail_parts = []
+
+    for section in sections:
+        header = section["header"]
+        raw_section = section["raw"]
+        text_section = section["text"]
+
+        if header is None:
+            if raw_section.strip():
+                detail_parts.append(raw_section.strip())
             continue
-        cleaned_lines.append(line)
-    cleaned = "\n".join(cleaned_lines)
-    return cleaned if cleaned.strip() else None
+
+        if header in remove_headers:
+            continue
+        if header in what_headers:
+            if text_section:
+                what_parts.append(text_section)
+            continue
+        if header in impacts_headers:
+            if text_section:
+                impacts_parts.append(text_section)
+            continue
+        if raw_section.strip():
+            detail_parts.append(raw_section.strip())
+
+    what = "\n\n".join(what_parts) if what_parts else None
+    impacts = "\n\n".join(impacts_parts) if impacts_parts else None
+    details = "\n\n".join(detail_parts) if detail_parts else None
+    return what, impacts, details
 
 
 def _to_fahrenheit(temp, unit):
@@ -730,9 +782,8 @@ def fetch_forecast(lat_value, lon_value):
             issued_time = format_alert_time(props.get("sent"))
             issuer = props.get("senderName")
             base_title = _alert_base_title(props)
-            description = _strip_alert_sections(
-                props.get("description"),
-                remove_headers=("when", "where"),
+            what, impacts, description = _parse_alert_description(
+                props.get("description")
             )
             long_sentence = base_title
             if issued_time:
@@ -760,6 +811,8 @@ def fetch_forecast(lat_value, lon_value):
                     "start": format_alert_time(start_time),
                     "ends": format_alert_time(end_time),
                     "description": description,
+                    "what": what,
+                    "impacts": impacts,
                 }
             )
     except requests.HTTPError:
