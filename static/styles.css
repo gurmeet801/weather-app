@@ -1247,7 +1247,8 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 190px;
+  width: clamp(180px, 24vw, 240px);
+  align-items: stretch;
 }
 
 .alert-validity__labels,
@@ -1273,20 +1274,19 @@ h3 {
 
 .alert-validity__bar {
   --alert-progress: 0%;
-  --alert-valid-light: rgba(30, 39, 50, 0.18);
-  --alert-valid-dark: rgba(30, 39, 50, 0.55);
+  --alert-valid-light: rgba(30, 39, 50, 0.2);
+  --alert-valid-dark: rgba(30, 39, 50, 0.6);
   position: relative;
   height: 6px;
   border-radius: 999px;
   width: 100%;
-  max-width: 220px;
-  margin: 0 auto;
+  margin: 0;
   background: linear-gradient(
     to right,
-    var(--alert-valid-light) 0%,
-    var(--alert-valid-light) var(--alert-progress),
+    var(--alert-valid-dark) 0%,
     var(--alert-valid-dark) var(--alert-progress),
-    var(--alert-valid-dark) 100%
+    var(--alert-valid-light) var(--alert-progress),
+    var(--alert-valid-light) 100%
   );
 }
 
@@ -1376,12 +1376,10 @@ h3 {
   }
 
   .alert-validity {
-    min-width: 0;
     width: 100%;
   }
 
   .alert-validity__bar {
-    max-width: none;
     margin: 0;
   }
 
