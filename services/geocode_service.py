@@ -33,6 +33,26 @@ def _normalize_zip(query):
     return None
 
 
+def _normalize_state(address_info):
+    if not isinstance(address_info, dict):
+        return None
+    state_code = address_info.get("state_code")
+    if state_code:
+        normalized = str(state_code).strip().upper()
+        return normalized or None
+    iso_code = address_info.get("ISO3166-2-lvl4") or address_info.get("ISO3166-2-lvl5")
+    if iso_code:
+        iso_code = str(iso_code).strip()
+        if iso_code.upper().startswith("US-"):
+            candidate = iso_code.split("-")[-1].strip().upper()
+            if len(candidate) == 2:
+                return candidate
+    state = address_info.get("state")
+    if isinstance(state, str):
+        return state.strip()
+    return state
+
+
 def geocode_address(address):
     if address is None:
         return None, None, None, None, None, "Enter an address or ZIP code."
@@ -100,7 +120,7 @@ def geocode_address(address):
     # Extract city and state from address details
     address_info = result.get("address", {})
     city = address_info.get("city") or address_info.get("town") or address_info.get("village") or address_info.get("hamlet")
-    state = address_info.get("state")
+    state = _normalize_state(address_info)
 
     return lat, lon, city, state, display_name, None
 

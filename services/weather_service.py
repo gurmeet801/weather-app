@@ -826,7 +826,7 @@ def build_daily_details(periods, limit=7):
     return daily
 
 
-def fetch_forecast(lat_value, lon_value):
+def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state=None):
     if isinstance(lat_value, str):
         lat_value = lat_value.strip()
     if isinstance(lon_value, str):
@@ -842,20 +842,21 @@ def fetch_forecast(lat_value, lon_value):
 
     # Create coordinate alias
     coord_alias = format_coordinate_alias(lat, lon)
-    
+
     # Check if we already have a canonical location for these coordinates
     cached_location_key = resolve_location_alias(coord_alias)
-    
+    preferred_key = format_location_key(preferred_city, preferred_state)
+
     points_url = f"https://api.weather.gov/points/{lat},{lon}"
 
     try:
         # Use a temporary cache group for the points API call to get city/state
-            points_data = cached_get_json(
-                points_url,
-                headers=WEATHER_GOV_HEADERS,
-                ttl=5 * 60,
-                cache_group="points_api",
-            )
+        points_data = cached_get_json(
+            points_url,
+            headers=WEATHER_GOV_HEADERS,
+            ttl=5 * 60,
+            cache_group="points_api",
+        )
     except requests.HTTPError:
         return None, "Weather.gov returned an error for those coordinates."
     except requests.RequestException:
@@ -874,18 +875,18 @@ def fetch_forecast(lat_value, lon_value):
     )
     city = location_props.get("city")
     state = location_props.get("state")
-    
-    if not city or not state:
+
+    # Prefer the geocoded location (address search) or cached alias when available.
+    default_key = format_location_key(city, state)
+    location_key = preferred_key or cached_location_key or default_key
+    if not location_key:
         return None, "Could not determine city and state for this location."
-    
-    # Create canonical location key from City, State
-    location_key = format_location_key(city, state)
-    location = f"{city}, {state}"
-    
+    location = location_key
+
     # Register the coordinate alias to point to the canonical location
-    if coord_alias and location_key and (not cached_location_key or cached_location_key != location_key):
+    if coord_alias and location_key and cached_location_key != location_key:
         register_location_alias(coord_alias, location_key)
-    
+
     # Use the canonical location key for caching
     cache_group = location_group_key(location_key)
 

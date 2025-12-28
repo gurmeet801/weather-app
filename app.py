@@ -82,7 +82,9 @@ def index():
         lat, lon, city, state, resolved_location, error = geocode_address(address)
         search_source = "Address search"
         if not error:
-            forecast, error = fetch_forecast(lat, lon)
+            forecast, error = fetch_forecast(
+                lat, lon, preferred_city=city, preferred_state=state
+            )
             if forecast and not error:
                 current_location_key = forecast.get("location_key")
                 # Register alias from address to canonical location
