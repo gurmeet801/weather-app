@@ -47,6 +47,7 @@ const elements = {
   dayDetailTimeAxis: document.getElementById('day-detail-time-axis'),
   dayDetailCharts: document.getElementById('day-detail-charts'),
   dayDetailEmpty: document.getElementById('day-detail-empty'),
+  hourlyCurrentTime: document.getElementById('hourly-current-time'),
 };
 
 // Configuration
@@ -738,6 +739,51 @@ function formatDateTimeLabel(value, timeZone) {
   return `${weekday}, ${month}/${day}, ${hour}:${minute}${dayPeriod}`;
 }
 
+function formatTimeLabelWithSeconds(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  const options = {
+    weekday: 'short',
+    month: '2-digit',
+    day: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  };
+  if (timeZone) {
+    options.timeZone = timeZone;
+  }
+  let parts;
+  try {
+    parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+  } catch (error) {
+    delete options.timeZone;
+    try {
+      parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+    } catch (fallbackError) {
+      return '';
+    }
+  }
+  const byType = {};
+  parts.forEach((part) => {
+    if (part.type !== 'literal') {
+      byType[part.type] = part.value;
+    }
+  });
+  const weekday = byType.weekday || '';
+  const month = byType.month || '';
+  const day = byType.day || '';
+  const hour = byType.hour || '';
+  const minute = byType.minute || '';
+  const second = byType.second || '';
+  const dayPeriod = (byType.dayPeriod || '').toLowerCase();
+  if (!weekday || !month || !day || !hour || !minute || !second || !dayPeriod) {
+    return '';
+  }
+  return `${weekday} ${month}/${day} ${hour}:${minute}:${second} ${dayPeriod}`;
+}
+
 function updateDateTime() {
   const now = new Date();
   const target = document.getElementById('datetime');
@@ -748,9 +794,21 @@ function updateDateTime() {
   updateAlertValidityBars(now);
 }
 
+function updateHourlyClock() {
+  const target = elements.hourlyCurrentTime;
+  if (!target) return;
+  const now = new Date();
+  const label = formatTimeLabelWithSeconds(now, currentTimeZone);
+  if (label) {
+    target.textContent = label;
+  }
+}
+
 function startDateTimeTicker() {
   updateDateTime();
+  updateHourlyClock();
   window.setInterval(updateDateTime, 60000);
+  window.setInterval(updateHourlyClock, 1000);
 }
 
 function startAutoRefresh(hasWeatherData) {
