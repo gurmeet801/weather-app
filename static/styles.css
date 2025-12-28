@@ -749,7 +749,6 @@ h3 {
 
   .stat {
     padding: 8px 10px;
-    min-height: 56px;
   }
 
   .stat-value {
@@ -782,7 +781,6 @@ h3 {
 
   .stat {
     padding: 8px 10px;
-    min-height: 52px;
   }
 
   .stat-value {
@@ -1108,7 +1106,7 @@ h3 {
 
 .alert-modern__header {
   display: grid;
-  grid-template-columns: minmax(0, 35%) minmax(0, 65%);
+  grid-template-columns: minmax(0, 50%) minmax(0, 50%);
   align-items: center;
   gap: 16px;
 }
