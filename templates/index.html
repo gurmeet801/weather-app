@@ -39,7 +39,6 @@
 <!-- Modals -->
 {% include "components/location_modal.html" %}
 {% include "components/switch_modal.html" %}
-{% include "components/refresh_modal.html" %}
 {% include "components/day_detail_modal.html" %}
 {% endblock %}
 
@@ -53,7 +52,6 @@
   
   WeatherApp.init({
     hasWeatherData: {{ 'true' if forecast or error else 'false' }},
-    usedCachedLocation: {{ 'true' if used_cached_location else 'false' }},
     hasLocationParams: (urlParams.has('lat') && urlParams.has('lon')) || hasAddressParam,
     currentLocationKey: {{ current_location_key | tojson }},
     dailyDetails: {{ forecast.daily_details | tojson if forecast else "[]" }},

@@ -25,15 +25,8 @@ const elements = {
   addressInput: document.getElementById('address'),
   locationForm: document.getElementById('location-form'),
   locationSuggestions: document.getElementById('location-suggestions'),
+  locationStatus: document.getElementById('location-status'),
   refreshBtn: document.getElementById('refresh-weather'),
-  manageLocationsBtn: document.getElementById('manage-locations'),
-  locationManagerModal: document.getElementById('location-manager-modal'),
-  locationManagerBackdrop: document.getElementById('location-manager-backdrop'),
-  locationManagerCloseBtn: document.getElementById('location-manager-close'),
-  locationManagerList: document.getElementById('location-manager-list'),
-  locationManagerStatus: document.getElementById('location-manager-status'),
-  locationManagerNewBtn: document.getElementById('location-manager-new'),
-  locationManagerCurrentBtn: document.getElementById('location-manager-current'),
   dailyForecastList: document.getElementById('daily-forecast-list'),
   dayDetailModal: document.getElementById('day-detail-modal'),
   dayDetailBackdrop: document.getElementById('day-detail-backdrop'),
@@ -149,6 +142,7 @@ function cancelLocationRequest() {
  */
 function openModal() {
   elements.locationModal?.classList.remove('hidden');
+  setLocationStatus('');
   elements.addressInput?.focus();
 }
 
@@ -165,6 +159,7 @@ function openManualSearch() {
  */
 function closeModal() {
   elements.locationModal?.classList.add('hidden');
+  setLocationStatus('');
 }
 
 /**
@@ -328,31 +323,15 @@ function initLocationAccess() {
     });
 }
 
-function setLocationManagerStatus(message) {
-  if (!elements.locationManagerStatus) return;
+function setLocationStatus(message) {
+  if (!elements.locationStatus) return;
   if (!message) {
-    elements.locationManagerStatus.textContent = '';
-    elements.locationManagerStatus.classList.add('hidden');
+    elements.locationStatus.textContent = '';
+    elements.locationStatus.classList.add('hidden');
     return;
   }
-  elements.locationManagerStatus.textContent = message;
-  elements.locationManagerStatus.classList.remove('hidden');
-}
-
-/**
- * Open the location manager modal
- */
-function openLocationManager() {
-  elements.locationManagerModal?.classList.remove('hidden');
-  setLocationManagerStatus('');
-}
-
-/**
- * Close the location manager modal
- */
-function closeLocationManager() {
-  elements.locationManagerModal?.classList.add('hidden');
-  setLocationManagerStatus('');
+  elements.locationStatus.textContent = message;
+  elements.locationStatus.classList.remove('hidden');
 }
 
 /**
@@ -801,36 +780,22 @@ async function refreshCurrentLocation({ showLoading: shouldShowLoading = true } 
 }
 
 /**
- * Delete a saved location from the manager
+ * Delete a saved location from the location modal
  */
-async function handleLocationManagerDelete(locationKey) {
+async function handleLocationDelete(locationKey) {
   if (!locationKey) return;
-  closeLocationManager();
+  closeModal();
   showLoading('Removing saved location...');
 
   const success = await sendLocationCacheAction('delete', locationKey);
   if (!success) {
     showState(elements.weatherState);
-    openLocationManager();
-    setLocationManagerStatus('Unable to update locations. Please try again.');
+    openModal();
+    setLocationStatus('Unable to update locations. Please try again.');
     return;
   }
 
   window.location.reload();
-}
-
-/**
- * Switch to a saved location from the manager
- */
-function handleLocationManagerSelect(button) {
-  if (!button) return;
-  const lat = Number(button.dataset.locationLat);
-  const lon = Number(button.dataset.locationLon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-  closeLocationManager();
-  const label = button.dataset.locationLabel;
-  showLoading(label ? `Switching to ${label}...` : 'Switching location...');
-  redirectToLocation({ lat, lon });
 }
 
 /**
@@ -894,9 +859,6 @@ function initWeatherApp(options = {}) {
     if (!elements.switchLocationModal?.classList.contains('hidden')) {
       closeSwitchModal();
     }
-    if (!elements.locationManagerModal?.classList.contains('hidden')) {
-      closeLocationManager();
-    }
     if (!elements.dayDetailModal?.classList.contains('hidden')) {
       closeDayDetailModal();
     }
@@ -921,32 +883,8 @@ function initWeatherApp(options = {}) {
   elements.refreshBtn?.addEventListener('click', () => {
     refreshCurrentLocation({ showLoading: true });
   });
-  elements.manageLocationsBtn?.addEventListener('click', openLocationManager);
-  elements.locationManagerBackdrop?.addEventListener('click', closeLocationManager);
-  elements.locationManagerCloseBtn?.addEventListener('click', closeLocationManager);
-  elements.locationManagerNewBtn?.addEventListener('click', () => {
-    closeLocationManager();
-    openModal();
-  });
-  elements.locationManagerCurrentBtn?.addEventListener('click', () => {
-    closeLocationManager();
-    requestLocation();
-  });
   elements.dayDetailBackdrop?.addEventListener('click', closeDayDetailModal);
   elements.dayDetailCloseBtn?.addEventListener('click', closeDayDetailModal);
-
-  elements.locationManagerList?.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-location-action]');
-    if (!button) return;
-    const action = button.dataset.locationAction;
-    if (action === 'delete') {
-      handleLocationManagerDelete(button.dataset.locationKey);
-      return;
-    }
-    if (action === 'select') {
-      handleLocationManagerSelect(button);
-    }
-  });
 
   elements.dailyForecastList?.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-day-key]');
@@ -955,15 +893,22 @@ function initWeatherApp(options = {}) {
   });
 
   elements.locationSuggestions?.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-location-lat]');
-    if (!button) return;
-    const lat = Number(button.dataset.locationLat);
-    const lon = Number(button.dataset.locationLon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-    closeModal();
-    const label = button.dataset.locationLabel;
-    showLoading(label ? `Switching to ${label}...` : 'Switching location...');
-    redirectToLocation({ lat, lon });
+    const actionButton = event.target.closest('[data-location-action]');
+    if (!actionButton) return;
+    const action = actionButton.dataset.locationAction;
+    if (action === 'delete') {
+      handleLocationDelete(actionButton.dataset.locationKey);
+      return;
+    }
+    if (action === 'select') {
+      const lat = Number(actionButton.dataset.locationLat);
+      const lon = Number(actionButton.dataset.locationLon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      closeModal();
+      const label = actionButton.dataset.locationLabel;
+      showLoading(label ? `Switching to ${label}...` : 'Switching location...');
+      redirectToLocation({ lat, lon });
+    }
   });
 
   const tempContainer = elements.dayDetailTempChart?.parentElement;

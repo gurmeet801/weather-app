@@ -2,13 +2,56 @@ import json
 import os
 import time
 from datetime import datetime
+from pathlib import Path
 from threading import Lock
 from urllib.parse import urlencode
 
 import requests
 
+def _load_env():
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+    try:
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if value and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+
+_load_env()
+
+
+def _resolve_cache_path(cache_path):
+    if not cache_path:
+        return cache_path
+    try:
+        path = Path(cache_path)
+    except TypeError:
+        return cache_path
+    if path.is_absolute():
+        return str(path)
+    repo_root = Path(__file__).resolve().parent
+    return str((repo_root / path).resolve())
+
+
 DEFAULT_USER_AGENT = "(weather.jawand.dev, jawandsingh@gmail.com)"
-CACHE_FILE = os.getenv("WEATHER_CACHE_FILE", "/data/weather_cache.json")
+CACHE_FILE = _resolve_cache_path(os.getenv("WEATHER_CACHE_FILE", "/data/weather_cache.json"))
 CACHE_LOCK = Lock()
 
 
