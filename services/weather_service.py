@@ -1,8 +1,10 @@
+import math
 import re
 from datetime import datetime
 
 import requests
 
+from services.geocode_service import geocode_place
 from utils import (
     cached_get_json,
     format_location_key,
@@ -28,6 +30,148 @@ def _parse_wind_speed_mph(value):
         return None
     speeds = [float(num) for num in numbers]
     return sum(speeds) / len(speeds)
+
+
+PROXIMITY_COLORS = [
+    (255, 68, 68),
+    (255, 119, 68),
+    (255, 170, 68),
+    (255, 204, 68),
+    (221, 221, 68),
+    (170, 204, 102),
+    (136, 187, 136),
+]
+
+
+def _haversine_miles(lat1, lon1, lat2, lon2):
+    radius = 3959
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    return radius * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+
+def _split_area_desc(area_desc):
+    if not area_desc:
+        return []
+    parts = [part.strip() for part in area_desc.split(";") if part.strip()]
+    if len(parts) <= 1:
+        parts = [part.strip() for part in re.split(r",\s*", area_desc) if part.strip()]
+    seen = set()
+    unique = []
+    for part in parts:
+        key = part.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(part)
+    return unique
+
+
+def _area_query_variants(area_name):
+    cleaned = area_name.strip()
+    if not cleaned:
+        return []
+    lowered = cleaned.lower()
+    if any(
+        token in lowered
+        for token in ("county", "parish", "borough", "city", "district", "zone")
+    ):
+        return [cleaned]
+    return [cleaned, f"{cleaned} County"]
+
+
+def _interpolate_color(ratio):
+    if ratio <= 0:
+        return PROXIMITY_COLORS[0]
+    if ratio >= 1:
+        return PROXIMITY_COLORS[-1]
+    scaled = ratio * (len(PROXIMITY_COLORS) - 1)
+    index = int(math.floor(scaled))
+    t = scaled - index
+    c1 = PROXIMITY_COLORS[index]
+    c2 = PROXIMITY_COLORS[index + 1]
+    r = round(c1[0] + (c2[0] - c1[0]) * t)
+    g = round(c1[1] + (c2[1] - c1[1]) * t)
+    b = round(c1[2] + (c2[2] - c1[2]) * t)
+    return r, g, b
+
+
+def _text_color_for_rgb(r, g, b):
+    luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    return "#1a1a1a" if luminance > 0.6 else "#ffffff"
+
+
+def _build_alert_areas(area_desc, origin_lat, origin_lon):
+    area_names = _split_area_desc(area_desc)
+    if not area_names:
+        return []
+    try:
+        origin_lat = float(origin_lat)
+        origin_lon = float(origin_lon)
+    except (TypeError, ValueError):
+        origin_lat = None
+        origin_lon = None
+
+    areas = []
+    geocode_cache = {}
+    for name in area_names:
+        cache_key = name.lower()
+        lat, lon = geocode_cache.get(cache_key, (None, None))
+        if lat is None or lon is None:
+            for query in _area_query_variants(name):
+                lat, lon = geocode_place(query)
+                if lat is not None and lon is not None:
+                    break
+        geocode_cache[cache_key] = (lat, lon)
+
+        distance = None
+        if origin_lat is not None and origin_lon is not None and lat is not None and lon is not None:
+            distance = _haversine_miles(origin_lat, origin_lon, lat, lon)
+
+        areas.append(
+            {
+                "name": name,
+                "distance": distance,
+                "distance_mi": int(round(distance)) if distance is not None else None,
+                "color": None,
+                "text_color": None,
+                "is_closest": False,
+            }
+        )
+
+    distances = [area["distance"] for area in areas if area["distance"] is not None]
+    min_distance = min(distances) if distances else None
+    max_distance = max(distances) if distances else None
+    if distances and min_distance is not None and max_distance is not None:
+        for area in areas:
+            if area["distance"] is None:
+                continue
+            ratio = 0 if max_distance == min_distance else (
+                (area["distance"] - min_distance) / (max_distance - min_distance)
+            )
+            r, g, b = _interpolate_color(ratio)
+            area["color"] = f"rgb({r}, {g}, {b})"
+            area["text_color"] = _text_color_for_rgb(r, g, b)
+            if abs(area["distance"] - min_distance) < 0.25:
+                area["is_closest"] = True
+
+    areas.sort(key=lambda item: (item["distance"] is None, item["distance"] or 0))
+    return areas
+
+
+def _severity_slug(value):
+    if not value:
+        return "minor"
+    lowered = value.strip().lower()
+    if lowered in ("minor", "moderate", "severe", "extreme"):
+        return lowered
+    return "minor"
 
 
 def _to_fahrenheit(temp, unit):
@@ -342,11 +486,18 @@ def fetch_forecast(lat_value, lon_value):
             props = feature.get("properties", {}) or {}
             start_time = props.get("effective") or props.get("onset")
             end_time = props.get("ends") or props.get("expires")
+            area_desc = props.get("areaDesc")
             alerts.append(
                 {
                     "title": props.get("headline") or props.get("event"),
                     "severity": props.get("severity"),
-                    "area": props.get("areaDesc"),
+                    "severity_slug": _severity_slug(props.get("severity")),
+                    "area": area_desc,
+                    "areas": _build_alert_areas(area_desc, lat, lon),
+                    "issuer": props.get("senderName"),
+                    "sent": format_alert_time(props.get("sent")),
+                    "start_iso": start_time,
+                    "end_iso": end_time,
                     "start": format_alert_time(start_time),
                     "ends": format_alert_time(end_time),
                 }

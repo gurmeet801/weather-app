@@ -79,3 +79,41 @@ def geocode_address(address):
     state = address_info.get("state")
 
     return lat, lon, city, state, display_name, None
+
+
+def geocode_place(query):
+    if query is None:
+        return None, None
+    cleaned = query.strip()
+    if not cleaned:
+        return None, None
+    try:
+        results = cached_get_json(
+            GEOCODER_URL,
+            params={
+                "q": cleaned,
+                "format": "json",
+                "limit": 1,
+                "countrycodes": "us",
+            },
+            headers=GEOCODER_HEADERS,
+            ttl=7 * 24 * 60 * 60,
+            cache_group="geocode_places",
+        )
+    except requests.HTTPError:
+        return None, None
+    except requests.RequestException:
+        return None, None
+
+    if not results:
+        return None, None
+
+    result = results[0]
+    lat = result.get("lat")
+    lon = result.get("lon")
+    if not lat or not lon:
+        return None, None
+    try:
+        return float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None, None
