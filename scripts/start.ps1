@@ -33,5 +33,6 @@ if (Test-Path $envFile) {
 }
 
 $port = if ($env:PORT) { $env:PORT } else { "4200" }
+$threads = if ($env:WAITRESS_THREADS) { $env:WAITRESS_THREADS } else { "8" }
 
-python -m waitress --listen=0.0.0.0:$port app:app
+python -m waitress --listen=0.0.0.0:$port --threads=$threads app:app

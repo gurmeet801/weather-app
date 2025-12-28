@@ -53,7 +53,7 @@ const elements = {
 // Configuration
 const CONFIG = {
   LOCATION_DELTA_THRESHOLD: 0.03,
-  AUTO_REFRESH_MS: 60 * 1000,
+  AUTO_REFRESH_MS: 5 * 60 * 1000,
   GEOLOCATION_QUICK: {
     label: 'Checking for a recent location...',
     options: {

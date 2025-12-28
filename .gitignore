@@ -3,3 +3,4 @@ __pycache__/
 weather_cache.json
 weather_cache.json.tmp
 /artifacts/playwright
+/.playwright-mcp
