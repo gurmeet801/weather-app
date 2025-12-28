@@ -58,6 +58,110 @@ def _haversine_miles(lat1, lon1, lat2, lon2):
     return radius * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
 
+def _project_miles(lat, lon, ref_lat):
+    radius = 3959
+    lat_rad = math.radians(lat)
+    lon_rad = math.radians(lon)
+    ref_lat_rad = math.radians(ref_lat)
+    return radius * lon_rad * math.cos(ref_lat_rad), radius * lat_rad
+
+
+def _point_in_ring(point, ring):
+    x, y = point
+    inside = False
+    if len(ring) < 3:
+        return False
+    for i in range(len(ring) - 1):
+        x0, y0 = ring[i]
+        x1, y1 = ring[i + 1]
+        if (y0 > y) != (y1 > y):
+            intersect_x = (x1 - x0) * (y - y0) / (y1 - y0 + 1e-12) + x0
+            if x < intersect_x:
+                inside = not inside
+    return inside
+
+
+def _point_to_segment_distance(point, a, b):
+    px, py = point
+    ax, ay = a
+    bx, by = b
+    dx = bx - ax
+    dy = by - ay
+    if dx == 0 and dy == 0:
+        return math.hypot(px - ax, py - ay)
+    t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)
+    t = max(0.0, min(1.0, t))
+    cx = ax + t * dx
+    cy = ay + t * dy
+    return math.hypot(px - cx, py - cy)
+
+
+def _ring_min_distance(point, ring):
+    if not ring or len(ring) < 2:
+        return None
+    min_dist = None
+    for i in range(len(ring) - 1):
+        dist = _point_to_segment_distance(point, ring[i], ring[i + 1])
+        if min_dist is None or dist < min_dist:
+            min_dist = dist
+    return min_dist
+
+
+def _geometry_distance_miles(origin_lat, origin_lon, geometry):
+    if not geometry or not isinstance(geometry, dict):
+        return None
+    geometry_type = geometry.get("type")
+    coords = geometry.get("coordinates")
+    if not coords:
+        return None
+
+    if geometry_type == "Point":
+        if len(coords) < 2:
+            return None
+        return _haversine_miles(origin_lat, origin_lon, coords[1], coords[0])
+
+    def project_ring(ring):
+        if not ring:
+            return []
+        projected = [_project_miles(lat, lon, origin_lat) for lon, lat in ring]
+        if projected and projected[0] != projected[-1]:
+            projected.append(projected[0])
+        return projected
+
+    def polygon_distance(rings):
+        if not rings:
+            return None
+        projected_rings = [project_ring(ring) for ring in rings if ring]
+        if not projected_rings or not projected_rings[0]:
+            return None
+        origin_xy = _project_miles(origin_lat, origin_lon, origin_lat)
+        inside_outer = _point_in_ring(origin_xy, projected_rings[0])
+        inside_hole = any(_point_in_ring(origin_xy, ring) for ring in projected_rings[1:])
+        if inside_outer and not inside_hole:
+            return 0.0
+        min_dist = None
+        for ring in projected_rings:
+            dist = _ring_min_distance(origin_xy, ring)
+            if dist is None:
+                continue
+            if min_dist is None or dist < min_dist:
+                min_dist = dist
+        return min_dist
+
+    if geometry_type == "Polygon":
+        return polygon_distance(coords)
+    if geometry_type == "MultiPolygon":
+        min_dist = None
+        for polygon in coords:
+            dist = polygon_distance(polygon)
+            if dist is None:
+                continue
+            if min_dist is None or dist < min_dist:
+                min_dist = dist
+        return min_dist
+    return None
+
+
 def _zone_id_from_url(url):
     if not url:
         return None
@@ -245,6 +349,16 @@ def _build_alert_areas(
                 display_name = f"{name}, {state}"
             zone_id = props.get("id") or zone_data.get("id") or _zone_id_from_url(zone_url)
 
+            distance = None
+            if (
+                origin_lat is not None
+                and origin_lon is not None
+                and zone_data.get("geometry")
+            ):
+                distance = _geometry_distance_miles(
+                    origin_lat, origin_lon, zone_data.get("geometry")
+                )
+
             lat, lon = _geometry_centroid(zone_data.get("geometry"))
             if lat is None or lon is None:
                 lat, lon = _zone_center_from_properties(props)
@@ -255,8 +369,13 @@ def _build_alert_areas(
                     lat, lon = geocode_place(display_name)
                 geocode_cache[cache_key] = (lat, lon)
 
-            distance = None
-            if origin_lat is not None and origin_lon is not None and lat is not None and lon is not None:
+            if (
+                distance is None
+                and origin_lat is not None
+                and origin_lon is not None
+                and lat is not None
+                and lon is not None
+            ):
                 distance = _haversine_miles(origin_lat, origin_lon, lat, lon)
 
             areas.append(
