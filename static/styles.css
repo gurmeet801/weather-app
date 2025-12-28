@@ -891,6 +891,20 @@ textarea {
     font-size: 3.1rem;
   }
 
+  .now-icon-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .now-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .now-condition {
+    font-size: 0.95rem;
+  }
+
   .hour-row {
     min-width: 80px;
     padding: 8px;
@@ -922,6 +936,28 @@ textarea {
 
   .btn {
     font-size: 0.88rem;
+  }
+
+  .now-primary {
+    gap: 12px;
+  }
+
+  .now-icon-wrapper {
+    width: 54px;
+    height: 54px;
+  }
+
+  .now-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .now-temp {
+    font-size: 2.8rem;
+  }
+
+  .now-condition {
+    font-size: 0.9rem;
   }
 
   .stats-grid {
