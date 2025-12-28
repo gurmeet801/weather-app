@@ -41,6 +41,7 @@ ALERT_AREA_BASE_COLORS = {
 }
 
 ALERT_AREA_LIGHTEN_MAX = 0.72
+ALERT_AREA_MAX_DISTANCE_MI = 50
 
 
 def _haversine_miles(lat1, lon1, lat2, lon2):
@@ -314,6 +315,14 @@ def _build_alert_areas(
                     "is_closest": False,
                 }
             )
+
+    if areas:
+        areas = [
+            area
+            for area in areas
+            if area["distance"] is not None
+            and area["distance"] <= ALERT_AREA_MAX_DISTANCE_MI
+        ]
 
     base_color = ALERT_AREA_BASE_COLORS.get(severity_slug, ALERT_AREA_BASE_COLORS["minor"])
     distances = [area["distance"] for area in areas if area["distance"] is not None]

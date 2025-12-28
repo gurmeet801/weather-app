@@ -58,7 +58,7 @@
         {% if alert.areas %}
         <div class="alert-areas w-full">
           <div class="alert-areas__header">
-            <span class="alert-areas__label">Affected counties by miles from current location</span>
+            <span class="alert-areas__label">Affected counties within 50 miles of current location</span>
           </div>
           <div class="alert-areas__list">
             {% for area in alert.areas %}
@@ -74,8 +74,6 @@
             {% endfor %}
           </div>
         </div>
-        {% elif alert.area %}
-        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 w-full truncate">{{ alert.area }}</p>
         {% endif %}
       </div>
     </div>
