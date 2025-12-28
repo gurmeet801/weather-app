@@ -56,6 +56,7 @@ const elements = {
 // Configuration
 const CONFIG = {
   LOCATION_DELTA_THRESHOLD: 0.03,
+  AUTO_REFRESH_MS: 5 * 60 * 1000,
   GEOLOCATION_QUICK: {
     label: 'Checking for a recent location...',
     options: {
@@ -678,6 +679,36 @@ function formatPrecipValue(value) {
   return `${Math.round(value)}%`;
 }
 
+function updateDateTime() {
+  const target = document.getElementById('datetime');
+  if (!target) return;
+  const now = new Date();
+  const date = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const time = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  target.textContent = `${date} | ${time}`;
+}
+
+function startDateTimeTicker() {
+  updateDateTime();
+  window.setInterval(updateDateTime, 60000);
+}
+
+function startAutoRefresh(hasWeatherData) {
+  if (!hasWeatherData) return;
+  window.setTimeout(() => {
+    window.location.reload();
+  }, CONFIG.AUTO_REFRESH_MS);
+}
+
 function handleTempChartMove(event) {
   if (!currentDayDetails || !elements.dayDetailTempChart) return;
   const hours = currentDayDetails.hours || [];
@@ -778,6 +809,9 @@ function initWeatherApp(options = {}) {
   if (Array.isArray(dailyDetails)) {
     dailyDetailsMap = new Map(dailyDetails.map((day) => [day.key, day]));
   }
+
+  startDateTimeTicker();
+  startAutoRefresh(hasWeatherData);
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {

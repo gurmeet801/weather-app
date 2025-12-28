@@ -1,13 +1,13 @@
 {# 7-Day Forecast Component #}
 {# Variables: forecast (required) #}
-<div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex-1">
-  <p class="text-white/50 text-[10px] sm:text-xs uppercase tracking-widest mb-3 sm:mb-4">7-Day Forecast</p>
+<section class="card forecast-card" style="--delay: 0.2s;">
+  <div class="card-title">7-Day Forecast</div>
   {% if forecast.daily_forecast %}
-  <div id="daily-forecast-list" class="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
+  <div id="daily-forecast-list" class="forecast-list">
     {% for day in forecast.daily_forecast %}
     <button
       type="button"
-      class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 hover:bg-white/15 active:bg-white/20 transition-colors text-left w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-h-[60px] sm:min-h-0"
+      class="forecast-row"
       data-day-key="{{ day.key }}"
       data-day-name="{{ day.name }}"
       data-day-date="{{ day.date_label }}"
@@ -18,24 +18,36 @@
       aria-haspopup="dialog"
       aria-controls="day-detail-modal"
     >
-      <div class="flex-1 min-w-0">
-        <p class="text-[13px] sm:text-sm font-medium">{{ day.name }}</p>
-        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 truncate">{{ day.shortForecast }}</p>
+      <div>
+        <div class="forecast-day">{{ day.name }}</div>
+        <div class="forecast-date">{{ day.date_label }}</div>
       </div>
-      <div class="text-right flex-shrink-0">
-        <p class="text-lg sm:text-xl font-semibold leading-none">
-          {% if day.high is not none %}{{ day.high }}{% else %}--{% endif %}<span class="text-[11px] sm:text-sm text-white/50">°{{ day.temperatureUnit | default('', true) }}</span>
-        </p>
-        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1">
-          Lo {% if day.low is not none %}{{ day.low }}{% else %}--{% endif %}°
-        </p>
+      <div class="forecast-condition">
+        <svg class="forecast-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/>
+        </svg>
+        <span>{{ day.shortForecast | default('--', true) }}</span>
+      </div>
+      <div class="forecast-temps">
+        <div class="temp-block">
+          <div class="temp-label">High</div>
+          <div class="forecast-high">
+            {% if day.high is not none %}{{ day.high }}&deg;{{ day.temperatureUnit | default('', true) }}{% else %}--{% endif %}
+          </div>
+        </div>
+        <div class="temp-block">
+          <div class="temp-label">Low</div>
+          <div class="forecast-low">
+            {% if day.low is not none %}{{ day.low }}&deg;{{ day.temperatureUnit | default('', true) }}{% else %}--{% endif %}
+          </div>
+        </div>
       </div>
     </button>
     {% endfor %}
   </div>
   {% else %}
-  <div class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-    <p class="text-white/50 text-[13px] sm:text-sm">Extended forecast unavailable</p>
+  <div class="glass-panel-subtle rounded-xl p-3 text-center">
+    <p class="text-white/60">Extended forecast unavailable</p>
   </div>
   {% endif %}
-</div>
+</section>

@@ -22,10 +22,10 @@
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
           <div class="flex-1 min-w-0">
             <span class="inline-block px-2 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-wider rounded-full mb-1
-              {% if alert.severity == 'Extreme' %}bg-red-500/30 text-red-200
-              {% elif alert.severity == 'Severe' %}bg-orange-500/30 text-orange-200
-              {% elif alert.severity == 'Moderate' %}bg-yellow-500/30 text-yellow-200
-              {% else %}bg-blue-400/30 text-blue-200{% endif %}">
+              {% if alert.severity == 'Extreme' %}bg-red-100 text-red-800
+              {% elif alert.severity == 'Severe' %}bg-orange-100 text-orange-800
+              {% elif alert.severity == 'Moderate' %}bg-yellow-100 text-yellow-800
+              {% else %}bg-blue-100 text-blue-800{% endif %}">
               {{ alert.severity }}
             </span>
             <p class="font-medium text-[13px] sm:text-sm leading-tight">{{ alert.title }}</p>
@@ -33,7 +33,11 @@
             <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 truncate">{{ alert.area }}</p>
             {% endif %}
           </div>
-          {% if alert.ends %}
+          {% if alert.start and alert.ends %}
+          <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">Valid {{ alert.start }} - {{ alert.ends }}</p>
+          {% elif alert.start %}
+          <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">From {{ alert.start }}</p>
+          {% elif alert.ends %}
           <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">Until {{ alert.ends }}</p>
           {% endif %}
         </div>
@@ -44,6 +48,6 @@
 </div>
 {% elif forecast.alerts_error %}
 <div class="mb-4 sm:mb-6 glass-card rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-rose-300/20 bg-rose-500/5">
-  <p class="text-rose-200 text-[11px] sm:text-xs text-center">{{ forecast.alerts_error }}</p>
+  <p class="text-rose-700 text-[11px] sm:text-xs text-center">{{ forecast.alerts_error }}</p>
 </div>
 {% endif %}

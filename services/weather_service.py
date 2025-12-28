@@ -71,18 +71,13 @@ def _calculate_feels_like(temp, unit, humidity=None, wind_mph=None):
     return int(round(feels_value))
 
 
-def build_hourly_today(periods):
-    if not periods:
+def build_hourly_today(periods, limit=24):
+    if not periods or limit <= 0:
         return []
     hourly = []
-    first_day = None
     for period in periods:
         dt = parse_iso_datetime(period.get("startTime"))
         if not dt:
-            continue
-        if first_day is None:
-            first_day = dt.date()
-        if dt.date() != first_day:
             continue
         hourly.append(
             {
@@ -92,6 +87,8 @@ def build_hourly_today(periods):
                 "shortForecast": period.get("shortForecast"),
             }
         )
+        if len(hourly) >= limit:
+            break
     return hourly
 
 
@@ -255,12 +252,12 @@ def fetch_forecast(lat_value, lon_value):
 
     try:
         # Use a temporary cache group for the points API call to get city/state
-        points_data = cached_get_json(
-            points_url,
-            headers=WEATHER_GOV_HEADERS,
-            ttl=12 * 60 * 60,
-            cache_group="points_api",
-        )
+            points_data = cached_get_json(
+                points_url,
+                headers=WEATHER_GOV_HEADERS,
+                ttl=5 * 60,
+                cache_group="points_api",
+            )
     except requests.HTTPError:
         return None, "Weather.gov returned an error for those coordinates."
     except requests.RequestException:
@@ -297,7 +294,7 @@ def fetch_forecast(lat_value, lon_value):
         forecast_data = cached_get_json(
             forecast_url,
             headers=WEATHER_GOV_HEADERS,
-            ttl=10 * 60,
+            ttl=5 * 60,
             cache_group=cache_group,
         )
     except requests.HTTPError:
@@ -318,7 +315,7 @@ def fetch_forecast(lat_value, lon_value):
             hourly_data = cached_get_json(
                 hourly_url,
                 headers=WEATHER_GOV_HEADERS,
-                ttl=10 * 60,
+                ttl=5 * 60,
                 cache_group=cache_group,
             )
             hourly_periods = hourly_data.get("properties", {}).get("periods", [])
@@ -343,12 +340,15 @@ def fetch_forecast(lat_value, lon_value):
         )
         for feature in alerts_data.get("features", []) or []:
             props = feature.get("properties", {}) or {}
+            start_time = props.get("effective") or props.get("onset")
+            end_time = props.get("ends") or props.get("expires")
             alerts.append(
                 {
                     "title": props.get("headline") or props.get("event"),
                     "severity": props.get("severity"),
                     "area": props.get("areaDesc"),
-                    "ends": format_alert_time(props.get("ends")),
+                    "start": format_alert_time(start_time),
+                    "ends": format_alert_time(end_time),
                 }
             )
     except requests.HTTPError:
@@ -362,6 +362,7 @@ def fetch_forecast(lat_value, lon_value):
     current_temp = periods[0].get("temperature")
     current_unit = periods[0].get("temperatureUnit")
     humidity_value = None
+    precip_value = None
     wind_speed_mph = _parse_wind_speed_mph(periods[0].get("windSpeed"))
 
     if hourly_periods:
@@ -376,6 +377,11 @@ def fetch_forecast(lat_value, lon_value):
             humidity_value = float(humidity) if humidity is not None else None
         except (TypeError, ValueError):
             humidity_value = None
+        precip = (hourly_current.get("probabilityOfPrecipitation") or {}).get("value")
+        try:
+            precip_value = float(precip) if precip is not None else None
+        except (TypeError, ValueError):
+            precip_value = None
         wind_speed_mph = _parse_wind_speed_mph(hourly_current.get("windSpeed")) or wind_speed_mph
 
     feels_like_temp = _calculate_feels_like(
@@ -383,6 +389,13 @@ def fetch_forecast(lat_value, lon_value):
     )
     if feels_like_temp is None:
         feels_like_temp = current_temp
+
+    humidity_percent = (
+        int(round(humidity_value)) if isinstance(humidity_value, (int, float)) else None
+    )
+    precip_percent = (
+        int(round(precip_value)) if isinstance(precip_value, (int, float)) else None
+    )
 
     return {
         "location": location,
@@ -398,5 +411,7 @@ def fetch_forecast(lat_value, lon_value):
         "feels_like_unit": current_unit,
         "actual_temperature": current_temp,
         "actual_temperature_unit": current_unit,
+        "humidity": humidity_percent,
+        "precip_chance": precip_percent,
         "location_key": location_key,
     }, None

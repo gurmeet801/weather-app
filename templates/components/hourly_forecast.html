@@ -1,32 +1,26 @@
 {# Hourly Forecast Component #}
 {# Variables: forecast (required) #}
-<div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-  <div class="flex items-center justify-between mb-3 sm:mb-4">
-    <p class="text-white/50 text-[10px] sm:text-xs uppercase tracking-widest">Today's Hourly</p>
-    {% if forecast.hourly_today %}
-    <p class="text-white/30 text-[10px] sm:text-xs flex items-center gap-1">
-      <span class="hidden xs:inline">Scroll</span> 
-      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    </p>
-    {% endif %}
-  </div>
+<section class="card hourly-card" style="--delay: 0.15s;">
+  <div class="card-title">Next 24 Hours</div>
   {% if forecast.hourly_today %}
-  <div class="hourly-scroll flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scroll-smooth">
+  <div class="hourly-list">
     {% for hour in forecast.hourly_today %}
-    <div class="glass-panel-subtle rounded-lg sm:rounded-xl p-2.5 sm:p-3 min-w-[80px] sm:min-w-[100px] text-center flex-shrink-0 hover:bg-white/15 active:bg-white/20 transition-colors snap-start">
-      <p class="text-[11px] sm:text-xs text-white/50 font-medium">{{ hour.time }}</p>
-      <p class="text-lg sm:text-xl font-semibold mt-0.5 sm:mt-1">{{ hour.temperature }}°</p>
-      <p class="text-[9px] sm:text-[10px] text-white/60 mt-0.5 sm:mt-1 leading-tight line-clamp-2">{{ hour.shortForecast }}</p>
+    <div class="hour-row">
+      <div class="hour-time">{{ hour.time }}</div>
+      <div class="hour-temp">{{ hour.temperature }}&deg;</div>
+      {% if hour.shortForecast %}
+      <div class="hour-summary">{{ hour.shortForecast }}</div>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
   {% elif forecast.hourly_error %}
-  <div class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-    <p class="text-rose-200 text-[13px] sm:text-sm">{{ forecast.hourly_error }}</p>
+  <div class="glass-panel-subtle rounded-xl p-3 text-center">
+    <p class="text-white/60">{{ forecast.hourly_error }}</p>
   </div>
   {% else %}
-  <div class="glass-panel-subtle rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-    <p class="text-white/50 text-[13px] sm:text-sm">Hourly forecast unavailable</p>
+  <div class="glass-panel-subtle rounded-xl p-3 text-center">
+    <p class="text-white/60">Hourly forecast unavailable</p>
   </div>
   {% endif %}
-</div>
+</section>

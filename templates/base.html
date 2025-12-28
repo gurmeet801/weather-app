@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#0a3d8f" />
+    <meta name="theme-color" content="#f1efe9" />
     <meta name="description" content="Local weather forecasts, alerts, and hourly details." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -17,27 +17,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
     <script src="https://cdn.tailwindcss.com"></script>
     {% block head %}{% endblock %}
   </head>
-  <body class="min-h-screen text-white antialiased">
-    <div class="relative min-h-screen overflow-hidden">
-      <!-- Background Effects -->
-      <div class="absolute inset-0">
-        <div class="orb orb-one"></div>
-        <div class="orb orb-two"></div>
-        <div class="orb orb-three"></div>
-        <div class="bg-grid"></div>
-      </div>
-
+  <body class="antialiased">
+    <div class="app-shell">
       <!-- Weather Animation Effects Container -->
       <div id="weather-effects" class="weather-effects"></div>
 
-      <main class="relative w-full max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-12 pb-safe">
+      <main class="app">
         {% block content %}{% endblock %}
       </main>
     </div>

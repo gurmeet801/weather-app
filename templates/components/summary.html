@@ -1,0 +1,21 @@
+{# Summary Card Component #}
+{# Variables: forecast (required) #}
+<section class="card summary-card" style="--delay: 0.1s;">
+  <div class="card-title">Forecast Overview</div>
+  <p class="summary-text">{{ forecast.period.detailedForecast or forecast.period.shortForecast }}</p>
+  {% set today = forecast.daily_forecast[0] if forecast.daily_forecast else None %}
+  <div class="summary-chips">
+    {% if today and today.high is not none %}
+    <div class="chip">High {{ today.high }}&deg;</div>
+    {% endif %}
+    {% if today and today.low is not none %}
+    <div class="chip">Low {{ today.low }}&deg;</div>
+    {% endif %}
+    {% if forecast.humidity is not none %}
+    <div class="chip">Humidity {{ forecast.humidity }}%</div>
+    {% endif %}
+    {% if forecast.precip_chance is not none %}
+    <div class="chip">Precip {{ forecast.precip_chance }}%</div>
+    {% endif %}
+  </div>
+</section>

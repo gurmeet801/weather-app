@@ -20,18 +20,18 @@
   {% include "components/alerts.html" %}
 
   <!-- Main Content Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
+  <div class="layout">
     <!-- Current Weather Card -->
     {% include "components/current_weather.html" %}
 
-    <!-- Right Column -->
-    <div class="lg:col-span-2 flex flex-col gap-3 sm:gap-6">
-      <!-- Hourly Forecast -->
-      {% include "components/hourly_forecast.html" %}
+    <!-- Summary Card -->
+    {% include "components/summary.html" %}
 
-      <!-- 7-Day Forecast -->
-      {% include "components/daily_forecast.html" %}
-    </div>
+    <!-- Hourly Forecast -->
+    {% include "components/hourly_forecast.html" %}
+
+    <!-- 7-Day Forecast -->
+    {% include "components/daily_forecast.html" %}
   </div>
   {% endif %}
 </div>
