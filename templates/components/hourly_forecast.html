@@ -1,7 +1,11 @@
 {# Hourly Forecast Component #}
 {# Variables: forecast (required) #}
 <section class="card hourly-card" style="--delay: 0.15s;">
-  <div class="card-title">Next 24 Hours</div>
+  <div class="card-title hourly-title">
+    <span>Next 24 Hours</span>
+    <span class="hourly-clock-label">Current time:</span>
+    <span id="hourly-current-time" class="hourly-clock"></span>
+  </div>
   {% if forecast.hourly_today %}
   <div class="hourly-list">
     {% for hour in forecast.hourly_today %}

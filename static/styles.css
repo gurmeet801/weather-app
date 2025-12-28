@@ -297,6 +297,20 @@ h3 {
   margin-bottom: 14px;
 }
 
+.hourly-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hourly-clock {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .now-header {
   display: flex;
   justify-content: space-between;
