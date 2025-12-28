@@ -1,7 +1,7 @@
 {# Summary Card Component #}
 {# Variables: forecast (required) #}
 <section class="card summary-card" style="--delay: 0.1s;">
-  <div class="card-title">Forecast Overview</div>
+  <div class="card-title">{{ forecast.period_label or "Forecast Overview" }}</div>
   <p class="summary-text">{{ forecast.period.detailedForecast or forecast.period.shortForecast }}</p>
   {% set today = forecast.daily_forecast[0] if forecast.daily_forecast else None %}
   <div class="summary-chips">

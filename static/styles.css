@@ -627,8 +627,6 @@ textarea {
 
   .forecast-row {
     min-width: 160px;
-    max-width: 200px;
-    width: 160px;
     padding: 14px;
     gap: 10px;
   }
@@ -770,8 +768,6 @@ textarea {
 
   .forecast-row {
     min-width: 150px;
-    max-width: 180px;
-    width: 150px;
     padding: 12px;
     gap: 8px;
   }
@@ -841,8 +837,6 @@ textarea {
 
   .forecast-row {
     min-width: 140px;
-    max-width: 160px;
-    width: 140px;
     padding: 10px;
   }
 
@@ -883,8 +877,6 @@ textarea {
 
   .forecast-row {
     min-width: 130px;
-    max-width: 150px;
-    width: 130px;
   }
 
   .forecast-high,
@@ -933,8 +925,6 @@ textarea {
 
   .forecast-row {
     min-width: 120px;
-    max-width: 140px;
-    width: 120px;
   }
 
   .forecast-day {
@@ -1209,6 +1199,8 @@ textarea {
   box-shadow: var(--shadow);
   padding: 20px 22px;
   color: var(--alert-text);
+  overflow: hidden;
+  min-width: 0;
 }
 
 .alert-modern--minor {
@@ -1671,7 +1663,7 @@ textarea {
   }
 
   .alert-modern {
-    padding: 16px;
+    padding: 14px;
   }
 
   .alert-modern__header {
@@ -1695,8 +1687,27 @@ textarea {
     font-size: 1.2rem;
   }
 
+  .alert-modern__issuer {
+    font-size: 0.82rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
   .alert-validity {
     width: 100%;
+  }
+
+  .alert-validity__labels {
+    font-size: 0.55rem;
+  }
+
+  .alert-validity__times {
+    font-size: 0.72rem;
+    flex-wrap: wrap;
+  }
+
+  .alert-validity__times span {
+    white-space: normal;
   }
 
   .alert-validity__bar {

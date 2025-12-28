@@ -2,6 +2,7 @@ import math
 import re
 from datetime import datetime
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -469,6 +470,45 @@ def _parse_alert_description(text):
     return what, impacts, details
 
 
+def _now_in_timezone(time_zone, fallback_dt=None):
+    if time_zone:
+        try:
+            return datetime.now(ZoneInfo(time_zone))
+        except Exception:
+            pass
+    if fallback_dt and fallback_dt.tzinfo:
+        return datetime.now(fallback_dt.tzinfo)
+    return datetime.now()
+
+
+def _forecast_overview_label(period, time_zone=None):
+    if not period or not isinstance(period, dict):
+        return "Forecast Overview"
+    name = period.get("name")
+    normalized = " ".join(str(name).split()) if name else ""
+    lowered = normalized.lower()
+    if lowered in ("today", "tonight"):
+        return f"{normalized}'s Forecast"
+
+    start_dt = parse_iso_datetime(period.get("startTime"))
+    is_daytime = period.get("isDaytime")
+    if start_dt:
+        now_local = _now_in_timezone(time_zone, start_dt)
+        if now_local.tzinfo and start_dt.tzinfo:
+            start_local = start_dt.astimezone(now_local.tzinfo)
+        else:
+            start_local = start_dt
+        if start_local.date() == now_local.date():
+            if is_daytime is True:
+                return "Today's Forecast"
+            if is_daytime is False:
+                return "Tonight's Forecast"
+
+    if normalized:
+        return f"{normalized} Forecast"
+    return "Forecast Overview"
+
+
 def _to_fahrenheit(temp, unit):
     if unit == "C":
         return (temp * 9 / 5) + 32
@@ -866,6 +906,7 @@ def fetch_forecast(lat_value, lon_value):
     precip_percent = (
         int(round(precip_value)) if isinstance(precip_value, (int, float)) else None
     )
+    period_label = _forecast_overview_label(periods[0], time_zone)
 
     return {
         "location": location,
@@ -885,4 +926,5 @@ def fetch_forecast(lat_value, lon_value):
         "precip_chance": precip_percent,
         "location_key": location_key,
         "time_zone": time_zone,
+        "period_label": period_label,
     }, None
