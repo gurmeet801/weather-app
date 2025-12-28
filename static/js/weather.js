@@ -72,6 +72,10 @@ const CONFIG = {
   },
 };
 
+const ALERT_RADIUS_COOKIE = 'alert_radius_mi';
+const ALERT_RADIUS_DEFAULT = 10;
+const ALERT_RADIUS_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
+
 // State
 let pendingSwitchLocation = null;
 let locationRequestId = 0;
@@ -188,6 +192,11 @@ function getCookieValue(name) {
   return match ? decodeURIComponent(match.split('=')[1]) : null;
 }
 
+function setCookieValue(name, value, days = 30) {
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; samesite=lax`;
+}
+
 /**
  * Get cached location from cookies
  */
@@ -198,6 +207,78 @@ function getCachedLocation() {
     return null;
   }
   return { lat, lon };
+}
+
+function parseAlertRadius(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return null;
+  return ALERT_RADIUS_OPTIONS.includes(parsed) ? parsed : null;
+}
+
+function getAlertRadiusPreference() {
+  const stored = parseAlertRadius(getCookieValue(ALERT_RADIUS_COOKIE));
+  return stored ?? ALERT_RADIUS_DEFAULT;
+}
+
+function setAlertRadiusPreference(value) {
+  if (!ALERT_RADIUS_OPTIONS.includes(value)) return;
+  setCookieValue(ALERT_RADIUS_COOKIE, value);
+}
+
+function applyAlertAreaFilter(container, radius) {
+  const areaTags = Array.from(container.querySelectorAll('.alert-modern__area-tag'));
+  let visibleCount = 0;
+  areaTags.forEach((tag) => {
+    const distance = Number.parseFloat(tag.dataset.distanceMi);
+    const isVisible = Number.isFinite(distance) ? distance <= radius : true;
+    tag.classList.toggle('is-hidden', !isVisible);
+    if (isVisible) {
+      visibleCount += 1;
+    }
+  });
+
+  const radiusLabel = container.querySelector('[data-alert-radius-label]');
+  if (radiusLabel) {
+    radiusLabel.textContent = radius;
+  }
+
+  const countLabel = container.querySelector('[data-alert-count-label]');
+  if (countLabel) {
+    countLabel.textContent = `${visibleCount} ${visibleCount === 1 ? 'county' : 'counties'}`;
+  }
+}
+
+function updateAlertAreaControls(radius) {
+  document.querySelectorAll('[data-alert-radius]').forEach((button) => {
+    const value = parseAlertRadius(button.dataset.alertRadius);
+    const isActive = value === radius;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
+function initAlertAreaFilters() {
+  const containers = document.querySelectorAll('[data-alert-areas]');
+  if (!containers.length) return;
+
+  const applyAll = (radius) => {
+    containers.forEach((container) => applyAlertAreaFilter(container, radius));
+    updateAlertAreaControls(radius);
+  };
+
+  const initialRadius = getAlertRadiusPreference();
+  applyAll(initialRadius);
+
+  containers.forEach((container) => {
+    container.querySelectorAll('[data-alert-radius]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = parseAlertRadius(button.dataset.alertRadius);
+        if (!selected) return;
+        setAlertRadiusPreference(selected);
+        applyAll(selected);
+      });
+    });
+  });
 }
 
 /**
@@ -950,6 +1031,7 @@ function initWeatherApp(options = {}) {
 
   startDateTimeTicker();
   startAutoRefresh(hasWeatherData);
+  initAlertAreaFilters();
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {
