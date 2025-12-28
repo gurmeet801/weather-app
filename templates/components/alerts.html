@@ -101,7 +101,7 @@
         {% for area in alert.areas %}
         <span
           class="alert-modern__area-tag{% if area.is_closest %} is-closest{% endif %}"
-          data-distance-mi="{{ area.distance_mi }}"
+          data-distance-mi="{{ area.distance }}"
         >
           <span class="alert-modern__area-name">{{ area.name }}</span>
           <span class="alert-modern__area-distance">{{ area.distance_mi }} mi</span>
