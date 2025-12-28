@@ -627,6 +627,8 @@ textarea {
 
   .forecast-row {
     min-width: 160px;
+    max-width: 200px;
+    width: 160px;
     padding: 14px;
     gap: 10px;
   }
