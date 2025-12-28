@@ -78,6 +78,7 @@ let currentLocationKey = null;
 let dailyDetailsMap = new Map();
 let currentDayDetails = null;
 let currentDayUnit = '';
+let currentTimeZone = null;
 
 /**
  * Show a specific UI state and hide others
@@ -697,17 +698,32 @@ function updateAlertValidityBars(now = new Date()) {
 function updateDateTime() {
   const now = new Date();
   const target = document.getElementById('datetime');
-  const date = now.toLocaleDateString('en-US', {
+  const dateOptions = {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  });
-  const time = now.toLocaleTimeString('en-US', {
+  };
+  const timeOptions = {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  });
+  };
+  if (currentTimeZone) {
+    dateOptions.timeZone = currentTimeZone;
+    timeOptions.timeZone = currentTimeZone;
+  }
+  let date;
+  let time;
+  try {
+    date = now.toLocaleDateString('en-US', dateOptions);
+    time = now.toLocaleTimeString('en-US', timeOptions);
+  } catch (error) {
+    delete dateOptions.timeZone;
+    delete timeOptions.timeZone;
+    date = now.toLocaleDateString('en-US', dateOptions);
+    time = now.toLocaleTimeString('en-US', timeOptions);
+  }
   if (target) {
     target.textContent = `${date} | ${time}`;
   }
@@ -843,8 +859,15 @@ function initWeatherApp(options = {}) {
     hasLocationParams,
     dailyDetails,
     currentLocationKey: initialLocationKey,
+    timeZone,
   } = options;
   currentLocationKey = initialLocationKey || null;
+  if (typeof timeZone === 'string') {
+    const trimmed = timeZone.trim();
+    currentTimeZone = trimmed ? trimmed : null;
+  } else {
+    currentTimeZone = null;
+  }
   if (Array.isArray(dailyDetails)) {
     dailyDetailsMap = new Map(dailyDetails.map((day) => [day.key, day]));
   }

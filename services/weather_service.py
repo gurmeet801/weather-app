@@ -579,6 +579,7 @@ def fetch_forecast(lat_value, lon_value):
         return None, "Could not reach api.weather.gov."
 
     points_props = points_data.get("properties", {})
+    time_zone = points_props.get("timeZone")
     forecast_url = points_props.get("forecast")
     hourly_url = points_props.get("forecastHourly")
     if not forecast_url:
@@ -744,4 +745,5 @@ def fetch_forecast(lat_value, lon_value):
         "humidity": humidity_percent,
         "precip_chance": precip_percent,
         "location_key": location_key,
+        "time_zone": time_zone,
     }, None
