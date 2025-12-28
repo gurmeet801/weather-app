@@ -26,11 +26,14 @@ const elements = {
   locationForm: document.getElementById('location-form'),
   locationSuggestions: document.getElementById('location-suggestions'),
   refreshBtn: document.getElementById('refresh-weather'),
-  refreshModal: document.getElementById('refresh-modal'),
-  refreshModalBackdrop: document.getElementById('refresh-modal-backdrop'),
-  refreshCloseBtn: document.getElementById('refresh-close'),
-  refreshLocationList: document.getElementById('refresh-location-list'),
-  refreshStatus: document.getElementById('refresh-status'),
+  manageLocationsBtn: document.getElementById('manage-locations'),
+  locationManagerModal: document.getElementById('location-manager-modal'),
+  locationManagerBackdrop: document.getElementById('location-manager-backdrop'),
+  locationManagerCloseBtn: document.getElementById('location-manager-close'),
+  locationManagerList: document.getElementById('location-manager-list'),
+  locationManagerStatus: document.getElementById('location-manager-status'),
+  locationManagerNewBtn: document.getElementById('location-manager-new'),
+  locationManagerCurrentBtn: document.getElementById('location-manager-current'),
   dailyForecastList: document.getElementById('daily-forecast-list'),
   dayDetailModal: document.getElementById('day-detail-modal'),
   dayDetailBackdrop: document.getElementById('day-detail-backdrop'),
@@ -56,7 +59,7 @@ const elements = {
 // Configuration
 const CONFIG = {
   LOCATION_DELTA_THRESHOLD: 0.03,
-  AUTO_REFRESH_MS: 5 * 60 * 1000,
+  AUTO_REFRESH_MS: 60 * 1000,
   GEOLOCATION_QUICK: {
     label: 'Checking for a recent location...',
     options: {
@@ -78,6 +81,7 @@ const CONFIG = {
 // State
 let pendingSwitchLocation = null;
 let locationRequestId = 0;
+let currentLocationKey = null;
 let dailyDetailsMap = new Map();
 let currentDayDetails = null;
 let currentDayUnit = '';
@@ -324,20 +328,31 @@ function initLocationAccess() {
     });
 }
 
-/**
- * Open the refresh cache modal
- */
-function openRefreshModal() {
-  elements.refreshModal?.classList.remove('hidden');
-  elements.refreshStatus?.classList.add('hidden');
+function setLocationManagerStatus(message) {
+  if (!elements.locationManagerStatus) return;
+  if (!message) {
+    elements.locationManagerStatus.textContent = '';
+    elements.locationManagerStatus.classList.add('hidden');
+    return;
+  }
+  elements.locationManagerStatus.textContent = message;
+  elements.locationManagerStatus.classList.remove('hidden');
 }
 
 /**
- * Close the refresh cache modal
+ * Open the location manager modal
  */
-function closeRefreshModal() {
-  elements.refreshModal?.classList.add('hidden');
-  elements.refreshStatus?.classList.add('hidden');
+function openLocationManager() {
+  elements.locationManagerModal?.classList.remove('hidden');
+  setLocationManagerStatus('');
+}
+
+/**
+ * Close the location manager modal
+ */
+function closeLocationManager() {
+  elements.locationManagerModal?.classList.add('hidden');
+  setLocationManagerStatus('');
 }
 
 /**
@@ -705,7 +720,7 @@ function startDateTimeTicker() {
 function startAutoRefresh(hasWeatherData) {
   if (!hasWeatherData) return;
   window.setTimeout(() => {
-    window.location.reload();
+    refreshCurrentLocation({ showLoading: false });
   }, CONFIG.AUTO_REFRESH_MS);
 }
 
@@ -755,37 +770,66 @@ function handlePrecipChartMove(event) {
   );
 }
 /**
- * Handle refresh/delete actions for a location
+ * Post a cache action for a location
  */
-async function handleRefreshAction(action, locationKey) {
-  if (!locationKey) return;
-  const isDelete = action === 'delete';
-
-  closeRefreshModal();
-  showLoading(
-    isDelete ? 'Removing cached data...' : 'Refreshing weather data...'
-  );
-
+async function sendLocationCacheAction(action, locationKey) {
+  if (!locationKey) return false;
   try {
     const response = await fetch('/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, location_key: locationKey }),
     });
-    if (!response.ok) {
-      throw new Error('Refresh failed');
-    }
+    return response.ok;
   } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Refresh the currently displayed location
+ */
+async function refreshCurrentLocation({ showLoading: shouldShowLoading = true } = {}) {
+  if (shouldShowLoading) {
+    showLoading('Refreshing current location...');
+  }
+  if (currentLocationKey) {
+    await sendLocationCacheAction('refresh', currentLocationKey);
+  }
+  window.location.reload();
+}
+
+/**
+ * Delete a saved location from the manager
+ */
+async function handleLocationManagerDelete(locationKey) {
+  if (!locationKey) return;
+  closeLocationManager();
+  showLoading('Removing saved location...');
+
+  const success = await sendLocationCacheAction('delete', locationKey);
+  if (!success) {
     showState(elements.weatherState);
-    openRefreshModal();
-    if (elements.refreshStatus) {
-      elements.refreshStatus.textContent = 'Unable to update cache. Please try again.';
-      elements.refreshStatus.classList.remove('hidden');
-    }
+    openLocationManager();
+    setLocationManagerStatus('Unable to update locations. Please try again.');
     return;
   }
 
   window.location.reload();
+}
+
+/**
+ * Switch to a saved location from the manager
+ */
+function handleLocationManagerSelect(button) {
+  if (!button) return;
+  const lat = Number(button.dataset.locationLat);
+  const lon = Number(button.dataset.locationLon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  closeLocationManager();
+  const label = button.dataset.locationLabel;
+  showLoading(label ? `Switching to ${label}...` : 'Switching location...');
+  redirectToLocation({ lat, lon });
 }
 
 /**
@@ -805,7 +849,13 @@ function checkForLocationSwitch(coords) {
  * Initialize the application
  */
 function initWeatherApp(options = {}) {
-  const { hasWeatherData, usedCachedLocation, hasLocationParams, dailyDetails } = options;
+  const {
+    hasWeatherData,
+    hasLocationParams,
+    dailyDetails,
+    currentLocationKey: initialLocationKey,
+  } = options;
+  currentLocationKey = initialLocationKey || null;
   if (Array.isArray(dailyDetails)) {
     dailyDetailsMap = new Map(dailyDetails.map((day) => [day.key, day]));
   }
@@ -816,8 +866,6 @@ function initWeatherApp(options = {}) {
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {
     initLocationAccess();
-  } else if (usedCachedLocation && navigator.geolocation) {
-    requestLocation({ showLoading: false, onSuccess: checkForLocationSwitch });
   }
 
   // Event Listeners
@@ -845,8 +893,8 @@ function initWeatherApp(options = {}) {
     if (!elements.switchLocationModal?.classList.contains('hidden')) {
       closeSwitchModal();
     }
-    if (!elements.refreshModal?.classList.contains('hidden')) {
-      closeRefreshModal();
+    if (!elements.locationManagerModal?.classList.contains('hidden')) {
+      closeLocationManager();
     }
     if (!elements.dayDetailModal?.classList.contains('hidden')) {
       closeDayDetailModal();
@@ -869,18 +917,34 @@ function initWeatherApp(options = {}) {
   elements.keepLocationBtn?.addEventListener('click', closeSwitchModal);
   elements.switchModalBackdrop?.addEventListener('click', closeSwitchModal);
 
-  elements.refreshBtn?.addEventListener('click', openRefreshModal);
-  elements.refreshModalBackdrop?.addEventListener('click', closeRefreshModal);
-  elements.refreshCloseBtn?.addEventListener('click', closeRefreshModal);
+  elements.refreshBtn?.addEventListener('click', () => {
+    refreshCurrentLocation({ showLoading: true });
+  });
+  elements.manageLocationsBtn?.addEventListener('click', openLocationManager);
+  elements.locationManagerBackdrop?.addEventListener('click', closeLocationManager);
+  elements.locationManagerCloseBtn?.addEventListener('click', closeLocationManager);
+  elements.locationManagerNewBtn?.addEventListener('click', () => {
+    closeLocationManager();
+    openModal();
+  });
+  elements.locationManagerCurrentBtn?.addEventListener('click', () => {
+    closeLocationManager();
+    requestLocation();
+  });
   elements.dayDetailBackdrop?.addEventListener('click', closeDayDetailModal);
   elements.dayDetailCloseBtn?.addEventListener('click', closeDayDetailModal);
 
-  elements.refreshLocationList?.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-refresh-action]');
+  elements.locationManagerList?.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-location-action]');
     if (!button) return;
-    const action = button.dataset.refreshAction;
-    const locationKey = button.dataset.locationKey;
-    handleRefreshAction(action, locationKey);
+    const action = button.dataset.locationAction;
+    if (action === 'delete') {
+      handleLocationManagerDelete(button.dataset.locationKey);
+      return;
+    }
+    if (action === 'select') {
+      handleLocationManagerSelect(button);
+    }
   });
 
   elements.dailyForecastList?.addEventListener('click', (event) => {

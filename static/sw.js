@@ -39,7 +39,12 @@ self.addEventListener('activate', (event) => {
 function stashResponse(request, response) {
   if (!response) return;
   if (!response.ok && response.type !== 'opaque') return;
-  caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, response.clone()));
+  if (response.bodyUsed) return;
+  const responseClone = response.clone();
+  caches
+    .open(RUNTIME_CACHE)
+    .then((cache) => cache.put(request, responseClone))
+    .catch(() => {});
 }
 
 function networkFirst(request) {

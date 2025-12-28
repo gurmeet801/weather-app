@@ -1,23 +1,33 @@
-{# Refresh Cache Modal Component #}
+{# Location Manager Modal Component #}
 {# Variables: cached_locations (optional), current_location_key (optional) #}
-<div id="refresh-modal" class="modal-overlay hidden">
-  <div class="modal-backdrop" id="refresh-modal-backdrop"></div>
+<div id="location-manager-modal" class="modal-overlay hidden">
+  <div class="modal-backdrop" id="location-manager-backdrop"></div>
   <div class="modal-content glass-card rounded-2xl p-4 sm:p-6 w-full max-w-lg mx-3 sm:mx-4 max-h-[90vh] overflow-hidden flex flex-col">
     <div class="flex items-start justify-between gap-3 mb-4">
       <div class="flex-1 min-w-0">
-        <h3 class="text-base sm:text-lg font-medium">Refresh cached data</h3>
-        <p class="text-white/60 text-[11px] sm:text-xs mt-1">Pick a location to refresh or delete.</p>
+        <h3 class="text-base sm:text-lg font-medium">Locations</h3>
+        <p class="text-white/60 text-[11px] sm:text-xs mt-1">Choose a saved place, add a new one, or delete.</p>
       </div>
-      <button id="refresh-close" class="text-white/50 hover:text-white/80 active:text-white transition-colors p-2 -mr-2 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+      <button id="location-manager-close" class="text-white/50 hover:text-white/80 active:text-white transition-colors p-2 -mr-2 rounded-lg hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
 
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+      <button id="location-manager-new" type="button" class="btn-secondary rounded-xl px-4 py-3 text-[13px] sm:text-xs min-h-[44px]">
+        Search new location
+      </button>
+      <button id="location-manager-current" type="button" class="btn-secondary rounded-xl px-4 py-3 text-[13px] sm:text-xs min-h-[44px]">
+        Use current location
+      </button>
+    </div>
+
     {% if cached_locations %}
-    <div id="refresh-location-list" class="space-y-2 overflow-y-auto pr-1 -mr-1 flex-1">
+    <div id="location-manager-list" class="space-y-2 overflow-y-auto pr-1 -mr-1 flex-1">
       {% for location in cached_locations %}
+      {% if location.lat is not none and location.lon is not none %}
       <div class="glass-panel-subtle rounded-xl p-3 flex flex-col gap-2.5">
         <div class="flex items-start justify-between gap-2">
           <div class="flex-1 min-w-0">
@@ -34,27 +44,30 @@
           <button
             type="button"
             class="btn-secondary rounded-lg px-3 py-2.5 text-[13px] sm:text-xs flex-1 min-h-[44px]"
-            data-refresh-action="refresh"
-            data-location-key="{{ location.key }}"
+            data-location-action="select"
+            data-location-lat="{{ location.lat }}"
+            data-location-lon="{{ location.lon }}"
+            data-location-label="{{ location.label }}"
           >
-            Refresh
+            Use
           </button>
           <button
             type="button"
             class="btn-secondary rounded-lg px-3 py-2.5 text-[13px] sm:text-xs flex-1 min-h-[44px]"
-            data-refresh-action="delete"
+            data-location-action="delete"
             data-location-key="{{ location.key }}"
           >
             Delete
           </button>
         </div>
       </div>
+      {% endif %}
       {% endfor %}
     </div>
     {% else %}
-    <p class="text-[13px] sm:text-xs text-white/60">No cached locations yet.</p>
+    <p class="text-[13px] sm:text-xs text-white/60">No saved locations yet.</p>
     {% endif %}
 
-    <p id="refresh-status" class="text-[11px] sm:text-xs text-rose-600 mt-4 hidden"></p>
+    <p id="location-manager-status" class="text-[11px] sm:text-xs text-rose-600 mt-4 hidden"></p>
   </div>
 </div>
