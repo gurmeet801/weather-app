@@ -1,6 +1,7 @@
 import math
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 
 import requests
 
@@ -55,6 +56,110 @@ def _haversine_miles(lat1, lon1, lat2, lon2):
     return radius * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
 
+def _zone_id_from_url(url):
+    if not url:
+        return None
+    try:
+        path = urlparse(url).path
+    except Exception:
+        path = str(url)
+    parts = [part for part in path.split("/") if part]
+    return parts[-1] if parts else None
+
+
+def _polygon_centroid_with_area(points):
+    if not points or len(points) < 3:
+        return None, 0
+    if points[0] != points[-1]:
+        points = points + [points[0]]
+    area = 0.0
+    centroid_x = 0.0
+    centroid_y = 0.0
+    for i in range(len(points) - 1):
+        x0, y0 = points[i]
+        x1, y1 = points[i + 1]
+        cross = (x0 * y1) - (x1 * y0)
+        area += cross
+        centroid_x += (x0 + x1) * cross
+        centroid_y += (y0 + y1) * cross
+    if area == 0:
+        return None, 0
+    area *= 0.5
+    centroid_x /= (6 * area)
+    centroid_y /= (6 * area)
+    return (centroid_y, centroid_x), abs(area)
+
+
+def _geometry_centroid(geometry):
+    if not geometry or not isinstance(geometry, dict):
+        return None, None
+    geometry_type = geometry.get("type")
+    coords = geometry.get("coordinates")
+    if not coords:
+        return None, None
+    if geometry_type == "Point":
+        if len(coords) < 2:
+            return None, None
+        return coords[1], coords[0]
+    if geometry_type == "Polygon":
+        centroid, _ = _polygon_centroid_with_area(coords[0])
+        if centroid:
+            return centroid[0], centroid[1]
+        return None, None
+    if geometry_type == "MultiPolygon":
+        total_area = 0.0
+        sum_x = 0.0
+        sum_y = 0.0
+        for polygon in coords:
+            if not polygon:
+                continue
+            centroid, area = _polygon_centroid_with_area(polygon[0])
+            if not centroid or area == 0:
+                continue
+            lat, lon = centroid
+            sum_x += lon * area
+            sum_y += lat * area
+            total_area += area
+        if total_area:
+            return sum_y / total_area, sum_x / total_area
+        return None, None
+    return None, None
+
+
+def _zone_center_from_properties(properties):
+    if not properties:
+        return None, None
+    center = properties.get("center")
+    if isinstance(center, dict) and center.get("type") == "Point":
+        coords = center.get("coordinates") or []
+        if len(coords) >= 2:
+            return coords[1], coords[0]
+    lat = properties.get("latitude") or properties.get("lat")
+    lon = properties.get("longitude") or properties.get("lon")
+    if lat is not None and lon is not None:
+        try:
+            return float(lat), float(lon)
+        except (TypeError, ValueError):
+            return None, None
+    return None, None
+
+
+def _fetch_alert_zone(zone_url):
+    if not zone_url:
+        return None
+    try:
+        return cached_get_json(
+            zone_url,
+            headers=WEATHER_GOV_HEADERS,
+            ttl=24 * 60 * 60,
+            cache_group="alert_zones",
+        )
+    except requests.HTTPError:
+        return None
+    except requests.RequestException:
+        return None
+
+
 def _split_area_desc(area_desc):
     if not area_desc:
         return []
@@ -102,10 +207,13 @@ def _text_color_for_rgb(r, g, b):
     return "#1a1a1a" if luminance > 0.6 else "#ffffff"
 
 
-def _build_alert_areas(area_desc, origin_lat, origin_lon, severity_slug=None):
-    area_names = _split_area_desc(area_desc)
-    if not area_names:
-        return []
+def _build_alert_areas(
+    area_desc,
+    origin_lat,
+    origin_lon,
+    severity_slug=None,
+    affected_zones=None,
+):
     try:
         origin_lat = float(origin_lat)
         origin_lon = float(origin_lon)
@@ -115,30 +223,97 @@ def _build_alert_areas(area_desc, origin_lat, origin_lon, severity_slug=None):
 
     areas = []
     geocode_cache = {}
-    for name in area_names:
-        cache_key = name.lower()
-        lat, lon = geocode_cache.get(cache_key, (None, None))
-        if lat is None or lon is None:
-            for query in _area_query_variants(name):
-                lat, lon = geocode_place(query)
-                if lat is not None and lon is not None:
-                    break
-        geocode_cache[cache_key] = (lat, lon)
+    zone_cache = {}
 
-        distance = None
-        if origin_lat is not None and origin_lon is not None and lat is not None and lon is not None:
-            distance = _haversine_miles(origin_lat, origin_lon, lat, lon)
+    if affected_zones:
+        for zone_url in affected_zones:
+            if not zone_url:
+                continue
+            zone_data = zone_cache.get(zone_url)
+            if zone_data is None:
+                zone_data = _fetch_alert_zone(zone_url)
+                zone_cache[zone_url] = zone_data
+            if not zone_data:
+                continue
+            props = zone_data.get("properties", {}) or {}
+            name = props.get("name") or props.get("id") or _zone_id_from_url(zone_url) or zone_url
+            state = props.get("state")
+            display_name = name
+            if state and state not in name:
+                display_name = f"{name}, {state}"
+            zone_id = props.get("id") or zone_data.get("id") or _zone_id_from_url(zone_url)
 
-        areas.append(
-            {
-                "name": name,
-                "distance": distance,
-                "distance_mi": int(round(distance)) if distance is not None else None,
-                "color": None,
-                "text_color": None,
-                "is_closest": False,
-            }
-        )
+            lat, lon = _geometry_centroid(zone_data.get("geometry"))
+            if lat is None or lon is None:
+                lat, lon = _zone_center_from_properties(props)
+            if lat is None or lon is None:
+                cache_key = display_name.lower()
+                lat, lon = geocode_cache.get(cache_key, (None, None))
+                if lat is None or lon is None:
+                    lat, lon = geocode_place(display_name)
+                geocode_cache[cache_key] = (lat, lon)
+
+            distance = None
+            if origin_lat is not None and origin_lon is not None and lat is not None and lon is not None:
+                distance = _haversine_miles(origin_lat, origin_lon, lat, lon)
+
+            areas.append(
+                {
+                    "name": display_name,
+                    "distance": distance,
+                    "distance_mi": int(round(distance)) if distance is not None else None,
+                    "color": None,
+                    "text_color": None,
+                    "is_closest": False,
+                    "zone_id": zone_id,
+                    "state": state,
+                }
+            )
+
+        if areas:
+            deduped = []
+            seen = set()
+            for area in areas:
+                key = area.get("zone_id") or area["name"].lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                deduped.append(area)
+            areas = deduped
+
+    if not areas:
+        area_names = _split_area_desc(area_desc)
+        if not area_names:
+            return []
+        for name in area_names:
+            cache_key = name.lower()
+            lat, lon = geocode_cache.get(cache_key, (None, None))
+            if lat is None or lon is None:
+                for query in _area_query_variants(name):
+                    lat, lon = geocode_place(query)
+                    if lat is not None and lon is not None:
+                        break
+            geocode_cache[cache_key] = (lat, lon)
+
+            distance = None
+            if (
+                origin_lat is not None
+                and origin_lon is not None
+                and lat is not None
+                and lon is not None
+            ):
+                distance = _haversine_miles(origin_lat, origin_lon, lat, lon)
+
+            areas.append(
+                {
+                    "name": name,
+                    "distance": distance,
+                    "distance_mi": int(round(distance)) if distance is not None else None,
+                    "color": None,
+                    "text_color": None,
+                    "is_closest": False,
+                }
+            )
 
     base_color = ALERT_AREA_BASE_COLORS.get(severity_slug, ALERT_AREA_BASE_COLORS["minor"])
     distances = [area["distance"] for area in areas if area["distance"] is not None]
@@ -491,7 +666,13 @@ def fetch_forecast(lat_value, lon_value):
                     "severity": severity,
                     "severity_slug": severity_slug,
                     "area": area_desc,
-                    "areas": _build_alert_areas(area_desc, lat, lon, severity_slug),
+                    "areas": _build_alert_areas(
+                        area_desc,
+                        lat,
+                        lon,
+                        severity_slug,
+                        props.get("affectedZones"),
+                    ),
                     "issuer": props.get("senderName"),
                     "sent": format_alert_time(props.get("sent")),
                     "start_iso": start_time,
