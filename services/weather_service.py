@@ -363,6 +363,45 @@ def _alert_base_title(props):
     return cleaned or "Weather Alert"
 
 
+def _alert_text_raw(value):
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+_ALERT_SECTION_RE = re.compile(
+    r"^\s*(?:[\*\-]\s*)?([A-Za-z][A-Za-z /&]+?)\s*(?:\.\.\.|:|-)\s*"
+)
+
+
+def _strip_alert_sections(text, remove_headers=None):
+    raw = _alert_text_raw(text)
+    if raw is None:
+        return None
+    remove_headers = {header.lower() for header in (remove_headers or [])}
+    normalized = raw.replace("\r\n", "\n").replace("\r", "\n")
+    lines = normalized.split("\n")
+    cleaned_lines = []
+    skipping = False
+    for line in lines:
+        match = _ALERT_SECTION_RE.match(line)
+        if match:
+            header = match.group(1).strip().lower()
+            if header in remove_headers:
+                skipping = True
+                continue
+            skipping = False
+            cleaned_lines.append(line)
+            continue
+        if skipping:
+            continue
+        cleaned_lines.append(line)
+    cleaned = "\n".join(cleaned_lines)
+    return cleaned if cleaned.strip() else None
+
+
 def _to_fahrenheit(temp, unit):
     if unit == "C":
         return (temp * 9 / 5) + 32
@@ -682,6 +721,10 @@ def fetch_forecast(lat_value, lon_value):
             issued_time = format_alert_time(props.get("sent"))
             issuer = props.get("senderName")
             base_title = _alert_base_title(props)
+            description = _strip_alert_sections(
+                props.get("description"),
+                remove_headers=("when", "where"),
+            )
             long_sentence = base_title
             if issued_time:
                 long_sentence = f"{long_sentence} issued {issued_time}"
@@ -707,6 +750,7 @@ def fetch_forecast(lat_value, lon_value):
                     "end_iso": end_time,
                     "start": format_alert_time(start_time),
                     "ends": format_alert_time(end_time),
+                    "description": description,
                 }
             )
     except requests.HTTPError:

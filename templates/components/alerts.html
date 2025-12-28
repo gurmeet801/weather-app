@@ -52,17 +52,19 @@
           </div>
           {% endif %}
         </div>
+        {% if alert.description %}
+        <p class="alert-description text-[11px] sm:text-xs text-white/70 mt-1 leading-relaxed">{{ alert.description }}</p>
+        {% endif %}
         {% if alert.areas %}
         <div class="alert-areas w-full">
           <div class="alert-areas__header">
-            <span class="alert-areas__label">Affected counties</span>
-            <span class="alert-areas__hint">Miles from you</span>
+            <span class="alert-areas__label">Affected counties by miles from current location</span>
           </div>
           <div class="alert-areas__list">
             {% for area in alert.areas %}
             <span
               class="alert-area-chip{% if area.is_closest %} is-closest{% endif %}{% if area.distance_mi is none %} is-muted{% endif %}"
-              {% if area.color and area.text_color %}style="background-color: {{ area.color }}; color: {{ area.text_color }};"{% endif %}
+              {% if area.color and area.text_color %}style="--area-accent: {{ area.color }}; --area-accent-text: {{ area.text_color }};"{% endif %}
             >
               <span class="alert-area-chip__name">{{ area.name }}{% if area.distance_mi is none %}*{% endif %}</span>
               {% if area.distance_mi is not none %}
