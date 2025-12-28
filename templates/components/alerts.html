@@ -75,13 +75,34 @@
     </div>
     {% endif %}
     {% if alert.areas %}
-    <div class="alert-modern__areas">
+    <div class="alert-modern__areas" data-alert-areas>
       <div class="alert-modern__areas-header">
-        <span class="alert-modern__areas-label">Affected counties within 50 miles of current location</span>
+        <span class="alert-modern__areas-label">
+          Affected counties within
+          <span class="alert-modern__areas-distance" data-alert-radius-label>10</span>
+          miles of current location
+        </span>
+        <span class="alert-modern__areas-count" data-alert-count-label></span>
+      </div>
+      {% set radius_options = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100] %}
+      <div class="alert-modern__areas-options" role="group" aria-label="County radius">
+        {% for miles in radius_options %}
+        <button
+          type="button"
+          class="alert-modern__areas-option"
+          data-alert-radius="{{ miles }}"
+          aria-pressed="false"
+        >
+          {{ miles }} mi
+        </button>
+        {% endfor %}
       </div>
       <div class="alert-modern__areas-list">
         {% for area in alert.areas %}
-        <span class="alert-modern__area-tag{% if area.is_closest %} is-closest{% endif %}">
+        <span
+          class="alert-modern__area-tag{% if area.is_closest %} is-closest{% endif %}"
+          data-distance-mi="{{ area.distance_mi }}"
+        >
           <span class="alert-modern__area-name">{{ area.name }}</span>
           <span class="alert-modern__area-distance">{{ area.distance_mi }} mi</span>
         </span>
