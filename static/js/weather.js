@@ -769,6 +769,7 @@ function handlePrecipChartMove(event) {
     tooltipText
   );
 }
+
 /**
  * Post a cache action for a location
  */
