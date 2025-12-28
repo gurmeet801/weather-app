@@ -1389,9 +1389,50 @@ textarea {
   color: var(--alert-muted);
 }
 
+.alert-modern__areas-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--alert-muted);
+}
+
 .alert-modern__areas-hint {
   font-size: 0.75rem;
   color: var(--alert-muted);
+}
+
+.alert-modern__areas-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.alert-modern__areas-option {
+  border: 1px solid var(--alert-border-soft);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  color: var(--alert-muted);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alert-modern__areas-option:hover {
+  border-color: var(--alert-accent);
+  color: var(--alert-accent);
+}
+
+.alert-modern__areas-option.is-active {
+  background: color-mix(in srgb, var(--alert-accent) 20%, #ffffff);
+  border-color: color-mix(in srgb, var(--alert-accent) 60%, transparent);
+  color: var(--alert-accent);
+}
+
+.alert-modern__areas-option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--alert-accent) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .alert-modern__areas-list {
@@ -1422,6 +1463,10 @@ textarea {
 .alert-modern__area-tag.is-muted {
   background: var(--alert-surface);
   color: var(--alert-muted);
+}
+
+.alert-modern__area-tag.is-hidden {
+  display: none;
 }
 
 .alert-modern__area-name {
