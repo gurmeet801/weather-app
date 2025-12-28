@@ -19,8 +19,8 @@
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3 flex-wrap">
-          <div class="flex-1 min-w-0">
+        <div class="alert-main{% if alert.start and alert.ends and alert.start_iso and alert.end_iso %} has-validity{% endif %}">
+          <div class="alert-main__left">
             <span class="inline-block px-2 py-0.5 text-[9px] sm:text-[10px] uppercase tracking-wider rounded-full mb-1
               {% if alert.severity == 'Extreme' %}bg-red-100 text-red-800
               {% elif alert.severity == 'Severe' %}bg-orange-100 text-orange-800
@@ -29,55 +29,52 @@
               {{ alert.severity }}
             </span>
             <p class="font-medium text-[13px] sm:text-sm leading-tight">{{ alert.title }}</p>
-            {% if alert.sent %}
-            <p class="text-[11px] sm:text-xs text-white/50">
-              Issued {{ alert.sent }}{% if alert.issuer %} by {{ alert.issuer }}{% endif %}
-            </p>
-            {% endif %}
           </div>
           {% if alert.start and alert.ends and alert.start_iso and alert.end_iso %}
-          <div class="alert-validity" aria-label="Alert valid time">
-            <div class="alert-validity__labels">
-              <span>Start</span>
-              <span>End</span>
-            </div>
-            <div
-              class="alert-validity__bar"
-              data-alert-start="{{ alert.start_iso | e }}"
-              data-alert-end="{{ alert.end_iso | e }}"
-            >
-              <span class="alert-validity__marker" aria-hidden="true"></span>
-            </div>
-            <div class="alert-validity__times">
-              <span>{{ alert.start }}</span>
-              <span>{{ alert.ends }}</span>
-            </div>
-          </div>
-          {% endif %}
-          {% if alert.areas %}
-          <div class="alert-areas w-full">
-            <div class="alert-areas__header">
-              <span class="alert-areas__label">Affected counties</span>
-              <span class="alert-areas__hint">Miles from you</span>
-            </div>
-            <div class="alert-areas__list">
-              {% for area in alert.areas %}
-              <span
-                class="alert-area-chip{% if area.is_closest %} is-closest{% endif %}{% if area.distance_mi is none %} is-muted{% endif %}"
-                {% if area.color and area.text_color %}style="background-color: {{ area.color }}; color: {{ area.text_color }};"{% endif %}
+          <div class="alert-main__right">
+            <div class="alert-validity" aria-label="Alert valid time">
+              <div class="alert-validity__labels">
+                <span>Start</span>
+                <span>End</span>
+              </div>
+              <div
+                class="alert-validity__bar"
+                data-alert-start="{{ alert.start_iso | e }}"
+                data-alert-end="{{ alert.end_iso | e }}"
               >
-                <span class="alert-area-chip__name">{{ area.name }}{% if area.distance_mi is none %}*{% endif %}</span>
-                {% if area.distance_mi is not none %}
-                <span class="alert-area-chip__distance">{{ area.distance_mi }} mi</span>
-                {% endif %}
-              </span>
-              {% endfor %}
+                <span class="alert-validity__marker" aria-hidden="true"></span>
+              </div>
+              <div class="alert-validity__times">
+                <span>{{ alert.start }}</span>
+                <span>{{ alert.ends }}</span>
+              </div>
             </div>
           </div>
-          {% elif alert.area %}
-          <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 w-full truncate">{{ alert.area }}</p>
           {% endif %}
         </div>
+        {% if alert.areas %}
+        <div class="alert-areas w-full">
+          <div class="alert-areas__header">
+            <span class="alert-areas__label">Affected counties</span>
+            <span class="alert-areas__hint">Miles from you</span>
+          </div>
+          <div class="alert-areas__list">
+            {% for area in alert.areas %}
+            <span
+              class="alert-area-chip{% if area.is_closest %} is-closest{% endif %}{% if area.distance_mi is none %} is-muted{% endif %}"
+              {% if area.color and area.text_color %}style="background-color: {{ area.color }}; color: {{ area.text_color }};"{% endif %}
+            >
+              <span class="alert-area-chip__name">{{ area.name }}{% if area.distance_mi is none %}*{% endif %}</span>
+              {% if area.distance_mi is not none %}
+              <span class="alert-area-chip__distance">{{ area.distance_mi }} mi</span>
+              {% endif %}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% elif alert.area %}
+        <p class="text-[11px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 w-full truncate">{{ alert.area }}</p>
+        {% endif %}
       </div>
     </div>
   </div>

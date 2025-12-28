@@ -345,6 +345,24 @@ def _severity_slug(value):
     return "minor"
 
 
+def _alert_base_title(props):
+    if not props:
+        return "Weather Alert"
+    event = props.get("event")
+    if event:
+        title = str(event).strip()
+        return title or "Weather Alert"
+    headline = props.get("headline") or ""
+    cleaned = str(headline).strip()
+    lowered = cleaned.lower()
+    for token in (" issued ", " until ", " by "):
+        idx = lowered.find(token)
+        if idx != -1:
+            cleaned = cleaned[:idx].strip()
+            break
+    return cleaned or "Weather Alert"
+
+
 def _to_fahrenheit(temp, unit):
     if unit == "C":
         return (temp * 9 / 5) + 32
@@ -656,14 +674,23 @@ def fetch_forecast(lat_value, lon_value):
         )
         for feature in alerts_data.get("features", []) or []:
             props = feature.get("properties", {}) or {}
-            start_time = props.get("effective")
+            start_time = props.get("onset")
             end_time = props.get("ends")
             area_desc = props.get("areaDesc")
             severity = props.get("severity")
             severity_slug = _severity_slug(severity)
+            issued_time = format_alert_time(props.get("sent"))
+            issuer = props.get("senderName")
+            base_title = _alert_base_title(props)
+            long_sentence = base_title
+            if issued_time:
+                long_sentence = f"{long_sentence} issued {issued_time}"
+            if issuer:
+                long_sentence = f"{long_sentence} by {issuer}"
             alerts.append(
                 {
-                    "title": props.get("headline") or props.get("event"),
+                    "title": long_sentence,
+                    "event": base_title,
                     "severity": severity,
                     "severity_slug": severity_slug,
                     "area": area_desc,
@@ -674,8 +701,8 @@ def fetch_forecast(lat_value, lon_value):
                         severity_slug,
                         props.get("affectedZones"),
                     ),
-                    "issuer": props.get("senderName"),
-                    "sent": format_alert_time(props.get("sent")),
+                    "issuer": issuer,
+                    "sent": issued_time,
                     "start_iso": start_time,
                     "end_iso": end_time,
                     "start": format_alert_time(start_time),
