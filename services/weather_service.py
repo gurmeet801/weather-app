@@ -385,6 +385,12 @@ _ALERT_SECTION_RE = re.compile(
 )
 
 
+def _collapse_newlines(value):
+    if value is None:
+        return None
+    return re.sub(r"\s*\n\s*", " ", value).strip()
+
+
 def _parse_alert_description(text):
     raw = _alert_text_raw(text)
     if raw is None:
@@ -457,8 +463,8 @@ def _parse_alert_description(text):
         if raw_section.strip():
             detail_parts.append(raw_section.strip())
 
-    what = "\n\n".join(what_parts) if what_parts else None
-    impacts = "\n\n".join(impacts_parts) if impacts_parts else None
+    what = _collapse_newlines("\n\n".join(what_parts)) if what_parts else None
+    impacts = _collapse_newlines("\n\n".join(impacts_parts)) if impacts_parts else None
     details = "\n\n".join(detail_parts) if detail_parts else None
     return what, impacts, details
 
