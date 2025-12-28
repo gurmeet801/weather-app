@@ -499,16 +499,17 @@ h3 {
   color: var(--text-muted);
 }
 
-.forecast-high {
+.forecast-high,
+.forecast-low {
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--accent-strong);
 }
 
+.forecast-high {
+}
+
 .forecast-low {
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .btn:focus-visible,
@@ -682,7 +683,7 @@ h3 {
   }
 
   .forecast-low {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
   }
 
   .alert-card {
