@@ -3,11 +3,22 @@
 {% set feels_value = forecast.feels_like_temperature or forecast.period.temperature %}
 {% set actual_value = forecast.actual_temperature or forecast.period.temperature %}
 {% set unit = forecast.feels_like_unit or forecast.period.temperatureUnit %}
+{% set advisory = namespace(found=false) %}
+{% if forecast.alerts %}
+  {% for alert in forecast.alerts %}
+    {% if alert.event and "Advisory" in alert.event %}
+      {% set advisory.found = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
 <section class="card now-card" style="--delay: 0.05s;">
   <div class="now-header">
     <div>
       <div class="now-temp">{{ feels_value }}&deg;</div>
       <div class="now-sub">Actual {{ actual_value }}&deg;{{ unit }}</div>
+      {% if advisory.found %}
+      <div class="now-advisory advisory-blink">See advisory below</div>
+      {% endif %}
     </div>
     <div class="now-aside">
       <svg class="now-icon" viewBox="0 0 24 24" fill="currentColor">

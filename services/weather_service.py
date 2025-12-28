@@ -206,7 +206,7 @@ def _shade_from_base(base_color, ratio, max_lighten=ALERT_AREA_LIGHTEN_MAX):
 
 def _text_color_for_rgb(r, g, b):
     luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    return "#1a1a1a" if luminance > 0.6 else "#ffffff"
+    return "#0b1f4d" if luminance > 0.6 else "#ffffff"
 
 
 def _build_alert_areas(
