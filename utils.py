@@ -324,7 +324,10 @@ def parse_iso_datetime(value):
 def format_hour_label(dt):
     if not dt:
         return None
-    return format_display_datetime(dt)
+    hour = dt.strftime("%I").lstrip("0")
+    minute = dt.strftime("%M")
+    ampm = dt.strftime("%p").lower()
+    return f"{hour}:{minute}{ampm}"
 
 
 def format_alert_time(value):
