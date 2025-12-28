@@ -83,8 +83,8 @@ $pids = $pids | Sort-Object -Unique
 
 if ($pids.Count -gt 0) {
     Write-Host "Stopping process id(s): $($pids -join ', ')" -ForegroundColor Yellow
-    foreach ($pid in $pids) {
-        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+    foreach ($processId in $pids) {
+        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
     }
 } else {
     Write-Host "No running Weather App process found on port $port." -ForegroundColor Gray

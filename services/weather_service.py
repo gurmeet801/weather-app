@@ -628,6 +628,16 @@ def _forecast_overview_label(period, time_zone=None):
     return "Forecast Overview"
 
 
+def _format_display_location(primary_label, near_label=None):
+    if not primary_label:
+        return near_label
+    if not near_label:
+        return primary_label
+    if primary_label.strip().lower() == near_label.strip().lower():
+        return primary_label
+    return f"{primary_label} (near {near_label})"
+
+
 def _to_fahrenheit(temp, unit):
     if unit == "C":
         return (temp * 9 / 5) + 32
@@ -881,7 +891,9 @@ def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state
     location_key = preferred_key or cached_location_key or default_key
     if not location_key:
         return None, "Could not determine city and state for this location."
-    location = location_key
+    primary_label = default_key or location_key
+    near_label = preferred_key if default_key and preferred_key else None
+    location = _format_display_location(primary_label, near_label)
 
     # Register the coordinate alias to point to the canonical location
     if coord_alias and location_key and cached_location_key != location_key:
