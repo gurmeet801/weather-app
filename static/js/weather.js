@@ -695,37 +695,55 @@ function updateAlertValidityBars(now = new Date()) {
   });
 }
 
-function updateDateTime() {
-  const now = new Date();
-  const target = document.getElementById('datetime');
-  const dateOptions = {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  };
-  const timeOptions = {
+function formatDateTimeLabel(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  const options = {
+    weekday: 'short',
+    month: '2-digit',
+    day: '2-digit',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   };
-  if (currentTimeZone) {
-    dateOptions.timeZone = currentTimeZone;
-    timeOptions.timeZone = currentTimeZone;
+  if (timeZone) {
+    options.timeZone = timeZone;
   }
-  let date;
-  let time;
+  let parts;
   try {
-    date = now.toLocaleDateString('en-US', dateOptions);
-    time = now.toLocaleTimeString('en-US', timeOptions);
+    parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
   } catch (error) {
-    delete dateOptions.timeZone;
-    delete timeOptions.timeZone;
-    date = now.toLocaleDateString('en-US', dateOptions);
-    time = now.toLocaleTimeString('en-US', timeOptions);
+    delete options.timeZone;
+    try {
+      parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+    } catch (fallbackError) {
+      return '';
+    }
   }
-  if (target) {
-    target.textContent = `${date} | ${time}`;
+  const byType = {};
+  parts.forEach((part) => {
+    if (part.type !== 'literal') {
+      byType[part.type] = part.value;
+    }
+  });
+  const weekday = byType.weekday || '';
+  const month = byType.month || '';
+  const day = byType.day || '';
+  const hour = byType.hour || '';
+  const minute = byType.minute || '';
+  const dayPeriod = (byType.dayPeriod || '').toLowerCase();
+  if (!weekday || !month || !day || !hour || !minute || !dayPeriod) {
+    return '';
+  }
+  return `${weekday}, ${month}/${day}, ${hour}:${minute}${dayPeriod}`;
+}
+
+function updateDateTime() {
+  const now = new Date();
+  const target = document.getElementById('datetime');
+  const label = formatDateTimeLabel(now, currentTimeZone);
+  if (target && label) {
+    target.textContent = label;
   }
   updateAlertValidityBars(now);
 }

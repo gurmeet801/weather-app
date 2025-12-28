@@ -656,8 +656,8 @@ def fetch_forecast(lat_value, lon_value):
         )
         for feature in alerts_data.get("features", []) or []:
             props = feature.get("properties", {}) or {}
-            start_time = props.get("effective") or props.get("onset")
-            end_time = props.get("ends") or props.get("expires")
+            start_time = props.get("effective")
+            end_time = props.get("ends")
             area_desc = props.get("areaDesc")
             severity = props.get("severity")
             severity_slug = _severity_slug(severity)

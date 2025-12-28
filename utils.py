@@ -198,7 +198,14 @@ def _prune_group_cache(group_cache, now):
 
 
 def cached_get_json(
-    url, *, headers=None, params=None, timeout=10, ttl=600, cache_group="default"
+    url,
+    *,
+    headers=None,
+    params=None,
+    timeout=10,
+    ttl=600,
+    cache_group="default",
+    throttle=None,
 ):
     cache_key = _cache_key(url, params)
     now = time.time()
@@ -210,6 +217,8 @@ def cached_get_json(
         if cached and cached.get("expires_at", 0) > now:
             return cached.get("value")
 
+    if throttle:
+        throttle()
     response = requests.get(url, headers=headers, params=params, timeout=timeout)
     response.raise_for_status()
     data = response.json()
@@ -315,11 +324,20 @@ def parse_iso_datetime(value):
 def format_hour_label(dt):
     if not dt:
         return None
-    return dt.strftime("%I %p").lstrip("0")
+    return format_display_datetime(dt)
 
 
 def format_alert_time(value):
     dt = parse_iso_datetime(value)
     if not dt:
         return None
-    return dt.strftime("%a %I:%M %p").lstrip("0")
+    return format_display_datetime(dt)
+
+
+def format_display_datetime(dt):
+    if not dt:
+        return None
+    hour = dt.strftime("%I").lstrip("0")
+    minute = dt.strftime("%M")
+    ampm = dt.strftime("%p").lower()
+    return f"{dt.strftime('%a')}, {dt.strftime('%m/%d')}, {hour}:{minute}{ampm}"

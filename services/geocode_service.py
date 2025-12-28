@@ -1,4 +1,6 @@
 import re
+import time
+from threading import Lock
 
 import requests
 
@@ -8,6 +10,19 @@ GEOCODER_URL = "https://nominatim.openstreetmap.org/search"
 GEOCODER_HEADERS = get_geocoder_headers()
 ZIP_RE = re.compile(r"^\d{5}(?:-\d{4})?$")
 ZIP9_RE = re.compile(r"^\d{9}$")
+NOMINATIM_MIN_INTERVAL = 1.0
+_NOMINATIM_LOCK = Lock()
+_last_nominatim_request = 0.0
+
+
+def _throttle_nominatim():
+    global _last_nominatim_request
+    with _NOMINATIM_LOCK:
+        now = time.monotonic()
+        wait = NOMINATIM_MIN_INTERVAL - (now - _last_nominatim_request)
+        if wait > 0:
+            time.sleep(wait)
+        _last_nominatim_request = time.monotonic()
 
 
 def _normalize_zip(query):
@@ -37,26 +52,35 @@ def geocode_address(address):
                     "countrycodes": "us",
                     "format": "json",
                     "limit": 1,
+                    "addressdetails": 1,
                 },
                 headers=GEOCODER_HEADERS,
                 ttl=24 * 60 * 60,
                 cache_group="geocode",
+                throttle=_throttle_nominatim,
             )
             if not results:
                 results = cached_get_json(
                     GEOCODER_URL,
-                    params={"q": f"{zip_code} USA", "format": "json", "limit": 1},
+                    params={
+                        "q": f"{zip_code} USA",
+                        "format": "json",
+                        "limit": 1,
+                        "addressdetails": 1,
+                    },
                     headers=GEOCODER_HEADERS,
                     ttl=24 * 60 * 60,
                     cache_group="geocode",
+                    throttle=_throttle_nominatim,
                 )
         else:
             results = cached_get_json(
                 GEOCODER_URL,
-                params={"q": query, "format": "json", "limit": 1},
+                params={"q": query, "format": "json", "limit": 1, "addressdetails": 1},
                 headers=GEOCODER_HEADERS,
                 ttl=24 * 60 * 60,
                 cache_group="geocode",
+                throttle=_throttle_nominatim,
             )
     except requests.HTTPError:
         return None, None, None, None, None, "Geocoding service returned an error."
@@ -99,6 +123,7 @@ def geocode_place(query):
             headers=GEOCODER_HEADERS,
             ttl=7 * 24 * 60 * 60,
             cache_group="geocode_places",
+            throttle=_throttle_nominatim,
         )
     except requests.HTTPError:
         return None, None

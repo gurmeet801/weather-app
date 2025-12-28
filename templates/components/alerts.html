@@ -29,6 +29,11 @@
               {{ alert.severity }}
             </span>
             <p class="font-medium text-[13px] sm:text-sm leading-tight">{{ alert.title }}</p>
+            {% if alert.sent %}
+            <p class="text-[11px] sm:text-xs text-white/50">
+              Issued {{ alert.sent }}{% if alert.issuer %} by {{ alert.issuer }}{% endif %}
+            </p>
+            {% endif %}
           </div>
           {% if alert.start and alert.ends and alert.start_iso and alert.end_iso %}
           <div class="alert-validity" aria-label="Alert valid time">
@@ -48,10 +53,6 @@
               <span>{{ alert.ends }}</span>
             </div>
           </div>
-          {% elif alert.start %}
-          <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">From {{ alert.start }}</p>
-          {% elif alert.ends %}
-          <p class="text-[11px] sm:text-xs text-white/50 sm:whitespace-nowrap">Until {{ alert.ends }}</p>
           {% endif %}
           {% if alert.areas %}
           <div class="alert-areas w-full">
