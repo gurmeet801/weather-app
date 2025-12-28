@@ -673,10 +673,30 @@ function formatPrecipValue(value) {
   return `${Math.round(value)}%`;
 }
 
+function updateAlertValidityBars(now = new Date()) {
+  const bars = document.querySelectorAll('.alert-validity__bar');
+  if (!bars.length) return;
+  const nowTime = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  if (!Number.isFinite(nowTime)) return;
+  bars.forEach((bar) => {
+    const startValue = bar.dataset.alertStart;
+    const endValue = bar.dataset.alertEnd;
+    if (!startValue || !endValue) return;
+    const startTime = Date.parse(startValue);
+    const endTime = Date.parse(endValue);
+    if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+      bar.style.setProperty('--alert-progress', '0%');
+      return;
+    }
+    const ratio = (nowTime - startTime) / (endTime - startTime);
+    const clamped = Math.max(0, Math.min(1, ratio));
+    bar.style.setProperty('--alert-progress', `${(clamped * 100).toFixed(2)}%`);
+  });
+}
+
 function updateDateTime() {
-  const target = document.getElementById('datetime');
-  if (!target) return;
   const now = new Date();
+  const target = document.getElementById('datetime');
   const date = now.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -688,7 +708,10 @@ function updateDateTime() {
     minute: '2-digit',
     hour12: true,
   });
-  target.textContent = `${date} | ${time}`;
+  if (target) {
+    target.textContent = `${date} | ${time}`;
+  }
+  updateAlertValidityBars(now);
 }
 
 function startDateTimeTicker() {

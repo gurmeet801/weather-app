@@ -1243,6 +1243,116 @@ h3 {
   color: var(--alert-muted);
 }
 
+.alert-validity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 190px;
+}
+
+.alert-validity__labels,
+.alert-validity__times {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.alert-validity__labels {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+.alert-validity__times {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.alert-validity__bar {
+  --alert-progress: 0%;
+  --alert-valid-light: rgba(30, 39, 50, 0.18);
+  --alert-valid-dark: rgba(30, 39, 50, 0.55);
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+  background: linear-gradient(
+    to right,
+    var(--alert-valid-light) 0%,
+    var(--alert-valid-light) var(--alert-progress),
+    var(--alert-valid-dark) var(--alert-progress),
+    var(--alert-valid-dark) 100%
+  );
+}
+
+.alert-validity__marker {
+  position: absolute;
+  left: var(--alert-progress);
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--alert-valid-dark);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.alert-areas {
+  margin-top: 8px;
+}
+
+.alert-areas__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.alert-areas__list {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.alert-area-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(30, 39, 50, 0.08);
+  color: var(--text-secondary);
+}
+
+.alert-area-chip__distance {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.alert-area-chip.is-closest {
+  box-shadow: 0 0 0 2px rgba(30, 39, 50, 0.18);
+}
+
+.alert-area-chip.is-muted {
+  background: rgba(30, 39, 50, 0.04);
+  color: var(--text-muted);
+}
+
 @media (max-width: 640px) {
   .alerts-stack {
     gap: 12px;
@@ -1263,6 +1373,20 @@ h3 {
 
   .alert-modern__title {
     font-size: 1.2rem;
+  }
+
+  .alert-validity {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .alert-validity__bar {
+    max-width: none;
+    margin: 0;
+  }
+
+  .alert-areas__list {
+    max-height: 160px;
   }
 }
 

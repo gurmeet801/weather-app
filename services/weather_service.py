@@ -32,15 +32,14 @@ def _parse_wind_speed_mph(value):
     return sum(speeds) / len(speeds)
 
 
-PROXIMITY_COLORS = [
-    (255, 68, 68),
-    (255, 119, 68),
-    (255, 170, 68),
-    (255, 204, 68),
-    (221, 221, 68),
-    (170, 204, 102),
-    (136, 187, 136),
-]
+ALERT_AREA_BASE_COLORS = {
+    "minor": (29, 78, 216),
+    "moderate": (180, 83, 9),
+    "severe": (185, 28, 28),
+    "extreme": (127, 29, 29),
+}
+
+ALERT_AREA_LIGHTEN_MAX = 0.72
 
 
 def _haversine_miles(lat1, lon1, lat2, lon2):
@@ -86,19 +85,15 @@ def _area_query_variants(area_name):
     return [cleaned, f"{cleaned} County"]
 
 
-def _interpolate_color(ratio):
-    if ratio <= 0:
-        return PROXIMITY_COLORS[0]
-    if ratio >= 1:
-        return PROXIMITY_COLORS[-1]
-    scaled = ratio * (len(PROXIMITY_COLORS) - 1)
-    index = int(math.floor(scaled))
-    t = scaled - index
-    c1 = PROXIMITY_COLORS[index]
-    c2 = PROXIMITY_COLORS[index + 1]
-    r = round(c1[0] + (c2[0] - c1[0]) * t)
-    g = round(c1[1] + (c2[1] - c1[1]) * t)
-    b = round(c1[2] + (c2[2] - c1[2]) * t)
+def _shade_from_base(base_color, ratio, max_lighten=ALERT_AREA_LIGHTEN_MAX):
+    if not base_color:
+        base_color = ALERT_AREA_BASE_COLORS["minor"]
+    base_r, base_g, base_b = base_color
+    clamped = max(0, min(1, ratio))
+    t = clamped * max_lighten
+    r = round(base_r + (255 - base_r) * t)
+    g = round(base_g + (255 - base_g) * t)
+    b = round(base_b + (255 - base_b) * t)
     return r, g, b
 
 
@@ -107,7 +102,7 @@ def _text_color_for_rgb(r, g, b):
     return "#1a1a1a" if luminance > 0.6 else "#ffffff"
 
 
-def _build_alert_areas(area_desc, origin_lat, origin_lon):
+def _build_alert_areas(area_desc, origin_lat, origin_lon, severity_slug=None):
     area_names = _split_area_desc(area_desc)
     if not area_names:
         return []
@@ -145,6 +140,7 @@ def _build_alert_areas(area_desc, origin_lat, origin_lon):
             }
         )
 
+    base_color = ALERT_AREA_BASE_COLORS.get(severity_slug, ALERT_AREA_BASE_COLORS["minor"])
     distances = [area["distance"] for area in areas if area["distance"] is not None]
     min_distance = min(distances) if distances else None
     max_distance = max(distances) if distances else None
@@ -155,7 +151,7 @@ def _build_alert_areas(area_desc, origin_lat, origin_lon):
             ratio = 0 if max_distance == min_distance else (
                 (area["distance"] - min_distance) / (max_distance - min_distance)
             )
-            r, g, b = _interpolate_color(ratio)
+            r, g, b = _shade_from_base(base_color, ratio)
             area["color"] = f"rgb({r}, {g}, {b})"
             area["text_color"] = _text_color_for_rgb(r, g, b)
             if abs(area["distance"] - min_distance) < 0.25:
@@ -487,13 +483,15 @@ def fetch_forecast(lat_value, lon_value):
             start_time = props.get("effective") or props.get("onset")
             end_time = props.get("ends") or props.get("expires")
             area_desc = props.get("areaDesc")
+            severity = props.get("severity")
+            severity_slug = _severity_slug(severity)
             alerts.append(
                 {
                     "title": props.get("headline") or props.get("event"),
-                    "severity": props.get("severity"),
-                    "severity_slug": _severity_slug(props.get("severity")),
+                    "severity": severity,
+                    "severity_slug": severity_slug,
                     "area": area_desc,
-                    "areas": _build_alert_areas(area_desc, lat, lon),
+                    "areas": _build_alert_areas(area_desc, lat, lon, severity_slug),
                     "issuer": props.get("senderName"),
                     "sent": format_alert_time(props.get("sent")),
                     "start_iso": start_time,
