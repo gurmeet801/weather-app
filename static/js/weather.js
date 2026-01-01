@@ -936,11 +936,19 @@ function updateHeaderTimestamp({ observationLabel, observationStation, observati
   const observationText = normalizeHeaderLabel(target.dataset.observationLabel || '');
   const stationText = (target.dataset.observationStation || '').trim();
   const ageText = formatRelativeAge(target.dataset.observationTimestamp || '');
-  if (!observationText) return;
+  if (!observationText && !stationText) return;
 
-  target.textContent = stationText
-    ? `Observed ${observationText} - ${stationText}${ageText ? ` \u00b7 ${ageText}` : ''}`
-    : `Observed ${observationText}${ageText ? ` \u00b7 ${ageText}` : ''}`;
+  const parts = ['Observed'];
+  if (stationText) {
+    parts.push(`at ${stationText} station`);
+  }
+  if (ageText) {
+    parts.push(ageText);
+  }
+  if (observationText) {
+    parts.push(`at ${observationText}`);
+  }
+  target.textContent = parts.join(' ');
 }
 
 function updateHourlyClock() {

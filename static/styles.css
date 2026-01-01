@@ -226,7 +226,7 @@ textarea {
   align-items: center;
   flex-wrap: nowrap;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   width: 100%;
   min-width: 0;
 }
@@ -240,18 +240,20 @@ textarea {
   font-size: clamp(1.8rem, 4vw, 2.3rem);
   font-weight: 700;
   line-height: 1.1;
-  margin-bottom: 2px;
+  margin: 14px 0 2px;
   overflow-wrap: anywhere;
 }
 
 .datetime {
   font-size: 1rem;
   color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.35;
 }
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -296,11 +298,39 @@ textarea {
   height: 18px;
 }
 
+.actions .btn {
+  min-width: 120px;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+  border-radius: 9px;
+  background: #d9ecff;
+  color: #1b3a5d;
+  border-color: #c6e1ff;
+  box-shadow: 0 6px 16px rgba(27, 58, 93, 0.12);
+}
+
+.actions .btn:hover {
+  background: #cfe6ff;
+  border-color: #cfe6ff;
+  transform: translateY(-1px);
+}
+
+.actions .btn.primary {
+  background: #d9ecff;
+  color: #1b3a5d;
+  border-color: #c6e1ff;
+}
+
+.actions .btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .header {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .station-picker {
@@ -308,7 +338,7 @@ textarea {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .station-label {
