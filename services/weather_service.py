@@ -1141,11 +1141,13 @@ def fetch_forecast(
                         distance = _haversine_miles(lat, lon, station_lat, station_lon)
                 station_lookup[station_id] = {"name": name, "distance": distance}
                 station_ids.append(station_id)
-                if distance is not None and distance <= 20:
+                if distance is not None and distance <= 30:
                     observation_stations.append(
                         {"id": station_id, "name": name, "distance_mi": round(distance, 1)}
                     )
             observation_stations.sort(key=lambda item: item["distance_mi"])
+            if not station_preference and observation_stations:
+                station_preference = observation_stations[0]["id"]
 
             def _load_observation_props(station_id):
                 observation_url = (

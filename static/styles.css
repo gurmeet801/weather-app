@@ -298,6 +298,9 @@ textarea {
 
 .header {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .station-picker {
@@ -305,28 +308,36 @@ textarea {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .station-label {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .station-buttons {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
 .station-btn {
-  min-width: 36px;
-  padding: 6px 10px;
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   font-size: 0.78rem;
-  border-radius: 999px;
+  font-weight: 700;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.station-btn:hover {
+  transform: none;
 }
 
 .station-btn.is-active {
