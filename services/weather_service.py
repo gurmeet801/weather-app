@@ -185,6 +185,23 @@ def _station_id_from_feature(feature):
     return _zone_id_from_url(feature.get("id"))
 
 
+def _station_label_from_observation(props):
+    if not props or not isinstance(props, dict):
+        return None
+    name = props.get("stationName")
+    if name:
+        return str(name).strip()
+    station_url = props.get("station")
+    if station_url:
+        station_id = _zone_id_from_url(station_url)
+        if station_id:
+            return station_id
+    station_id = props.get("stationIdentifier")
+    if station_id:
+        return str(station_id).strip()
+    return None
+
+
 def _polygon_centroid_with_area(points):
     if not points or len(points) < 3:
         return None, 0
@@ -1089,6 +1106,8 @@ def fetch_forecast(
     observation_unit = None
     observation_humidity = None
     observation_wind_mph = None
+    observation_station = None
+    observation_timestamp = None
     if stations_url:
         try:
             stations_data = cached_get_json(
@@ -1144,6 +1163,8 @@ def fetch_forecast(
 
             if best_props:
                 observation_label = _format_time_label(best_dt, time_zone)
+                observation_station = _station_label_from_observation(best_props)
+                observation_timestamp = best_props.get("timestamp")
                 observation_temp, observation_unit = _parse_observation_temperature(
                     best_props.get("temperature")
                 )
@@ -1301,5 +1322,7 @@ def fetch_forecast(
         "forecast_updated_label": forecast_updated_label,
         "forecast_data_label": forecast_data_label,
         "observation_label": observation_label,
+        "observation_station": observation_station,
+        "observation_timestamp": observation_timestamp,
         "period_label": period_label,
     }, None

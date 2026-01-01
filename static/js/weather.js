@@ -877,6 +877,7 @@ function updateDateTime() {
     target.textContent = label;
   }
   updateAlertValidityBars(now);
+  updateHeaderTimestamp();
 }
 
 function normalizeHeaderLabel(value) {
@@ -884,18 +885,46 @@ function normalizeHeaderLabel(value) {
   return value.replace(/^(as of|forecast for|observed)\s+/i, '').trim();
 }
 
-function updateHeaderTimestamp({ observationLabel } = {}) {
+function formatRelativeAge(value) {
+  const timestamp = typeof value === 'string' ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(timestamp)) return '';
+  const diffMs = Date.now() - timestamp;
+  if (!Number.isFinite(diffMs) || diffMs < 0) return '';
+  const minutes = Math.max(1, Math.floor(diffMs / 60000));
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours < 24) {
+    return remainingMinutes ? `${hours}h ${remainingMinutes}m ago` : `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function updateHeaderTimestamp({ observationLabel, observationStation, observationTimestamp } = {}) {
   const target = document.getElementById('datetime');
   if (!target || target.dataset?.datetimeMode !== 'forecast') return;
 
   if (typeof observationLabel === 'string') {
     target.dataset.observationLabel = normalizeHeaderLabel(observationLabel);
   }
+  if (typeof observationStation === 'string') {
+    target.dataset.observationStation = observationStation.trim();
+  }
+  if (typeof observationTimestamp === 'string') {
+    target.dataset.observationTimestamp = observationTimestamp.trim();
+  }
 
   const observationText = normalizeHeaderLabel(target.dataset.observationLabel || '');
+  const stationText = (target.dataset.observationStation || '').trim();
+  const ageText = formatRelativeAge(target.dataset.observationTimestamp || '');
   if (!observationText) return;
 
-  target.textContent = `Observed ${observationText}`;
+  target.textContent = stationText
+    ? `Observed ${observationText} - ${stationText}${ageText ? ` \u00b7 ${ageText}` : ''}`
+    : `Observed ${observationText}${ageText ? ` \u00b7 ${ageText}` : ''}`;
 }
 
 function updateHourlyClock() {
@@ -1055,8 +1084,16 @@ function applyDeferredExtras(data) {
       updateHourlyClock();
     }
   }
-  if (typeof data.observation_label === 'string') {
-    updateHeaderTimestamp({ observationLabel: data.observation_label });
+  if (
+    typeof data.observation_label === 'string' ||
+    typeof data.observation_station === 'string' ||
+    typeof data.observation_timestamp === 'string'
+  ) {
+    updateHeaderTimestamp({
+      observationLabel: data.observation_label,
+      observationStation: data.observation_station,
+      observationTimestamp: data.observation_timestamp,
+    });
   }
   updateDailyDetails(data.daily_details);
   updateHourlyContent(data.hourly_today, data.hourly_error);
@@ -1242,6 +1279,7 @@ function initWeatherApp(options = {}) {
   if (hasWeatherData && deferExtras && coords) {
     scheduleDeferredExtras(coords);
   }
+  updateHeaderTimestamp();
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {

@@ -9,9 +9,11 @@
       id="datetime"
       data-datetime-mode="forecast"
       data-observation-label="{{ observation_label or '' }}"
+      data-observation-station="{{ forecast.observation_station or '' }}"
+      data-observation-timestamp="{{ forecast.observation_timestamp or '' }}"
     >
       {% if observation_label %}
-        Observed {{ observation_label }}
+        Observed {{ observation_label }}{% if forecast.observation_station %} - {{ forecast.observation_station }}{% endif %}
       {% else %}
         {{ forecast.period.name }}
       {% endif %}

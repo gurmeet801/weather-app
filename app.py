@@ -264,6 +264,8 @@ def forecast_extras():
         "location_key": forecast.get("location_key"),
         "forecast_data_label": forecast.get("forecast_data_label"),
         "observation_label": forecast.get("observation_label"),
+        "observation_station": forecast.get("observation_station"),
+        "observation_timestamp": forecast.get("observation_timestamp"),
         "time_zone": forecast.get("time_zone"),
     }
 
