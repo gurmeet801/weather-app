@@ -31,7 +31,9 @@
     {% include "components/daily_forecast.html" %}
 
     <!-- Alerts Banner -->
-    {% include "components/alerts.html" %}
+    <div id="alerts-container">
+      {% include "components/alerts.html" %}
+    </div>
   </div>
   {% endif %}
 </div>
@@ -56,6 +58,8 @@
     currentLocationKey: {{ current_location_key | tojson }},
     timeZone: {{ forecast.time_zone | tojson if forecast else "null" }},
     dailyDetails: {{ forecast.daily_details | tojson if forecast else "[]" }},
+    deferExtras: {{ 'true' if defer_extras else 'false' }},
+    coords: {{ resolved_coords | tojson if resolved_coords else "null" }},
   });
 
   // Apply dynamic weather background

@@ -48,6 +48,9 @@ const elements = {
   dayDetailCharts: document.getElementById('day-detail-charts'),
   dayDetailEmpty: document.getElementById('day-detail-empty'),
   hourlyCurrentTime: document.getElementById('hourly-current-time'),
+  hourlyContent: document.getElementById('hourly-content'),
+  alertsContainer: document.getElementById('alerts-container'),
+  advisoryBadge: document.getElementById('advisory-badge'),
 };
 
 // Configuration
@@ -899,6 +902,185 @@ function startAutoRefresh(hasWeatherData) {
   }, CONFIG.AUTO_REFRESH_MS);
 }
 
+function updateTextTargets(selector, value) {
+  document.querySelectorAll(selector).forEach((element) => {
+    element.textContent = value;
+  });
+}
+
+function normalizeNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Math.round(number);
+}
+
+function updateInlineValue(selector, value) {
+  const text = value == null ? '--' : `${value}`;
+  updateTextTargets(selector, text);
+}
+
+function updateStatValue(selector, value, suffix = '') {
+  const text = value == null ? '--' : `${value}${suffix}`;
+  updateTextTargets(selector, text);
+}
+
+function updateHumidity(value) {
+  const normalized = normalizeNumber(value);
+  updateInlineValue('[data-humidity-value]', normalized);
+  updateStatValue('[data-humidity-stat]', normalized, '%');
+}
+
+function updatePrecip(value) {
+  const normalized = normalizeNumber(value);
+  updateInlineValue('[data-precip-value]', normalized);
+  updateStatValue('[data-precip-stat]', normalized, '%');
+}
+
+function updateFeelsLike(value) {
+  const normalized = normalizeNumber(value);
+  const text = normalized == null ? '--' : `${normalized}\u00b0`;
+  updateTextTargets('[data-feels-like-temp]', text);
+}
+
+function updateActualTemp(value, unit) {
+  const normalized = normalizeNumber(value);
+  const unitLabel = unit ? `${unit}` : '';
+  const text = normalized == null ? 'Actual --' : `Actual ${normalized}\u00b0${unitLabel}`;
+  updateTextTargets('[data-actual-temp]', text);
+}
+
+function updateAdvisoryBadge(hasAdvisory) {
+  if (!elements.advisoryBadge) return;
+  elements.advisoryBadge.classList.toggle('hidden', !hasAdvisory);
+}
+
+function updateDailyDetails(details) {
+  if (!Array.isArray(details)) return;
+  dailyDetailsMap = new Map(details.map((day) => [day.key, day]));
+  if (!currentDayDetails?.key) return;
+  const updated = dailyDetailsMap.get(currentDayDetails.key);
+  if (!updated) return;
+  currentDayDetails = updated;
+  if (elements.dayDetailModal && !elements.dayDetailModal.classList.contains('hidden')) {
+    renderDayCharts(updated, currentDayUnit);
+  }
+}
+
+function updateHourlyContent(hourlyToday, hourlyError) {
+  if (!elements.hourlyContent) return;
+  elements.hourlyContent.textContent = '';
+
+  if (Array.isArray(hourlyToday) && hourlyToday.length) {
+    const list = document.createElement('div');
+    list.className = 'hourly-list';
+    hourlyToday.forEach((hour) => {
+      const row = document.createElement('div');
+      row.className = 'hour-row';
+
+      const time = document.createElement('div');
+      time.className = 'hour-time';
+      time.textContent = hour?.time || '';
+
+      const temp = document.createElement('div');
+      temp.className = 'hour-temp';
+      temp.textContent = Number.isFinite(hour?.temperature)
+        ? `${hour.temperature}\u00b0`
+        : '--';
+
+      row.appendChild(time);
+      row.appendChild(temp);
+
+      if (hour?.shortForecast) {
+        const summary = document.createElement('div');
+        summary.className = 'hour-summary';
+        summary.textContent = hour.shortForecast;
+        row.appendChild(summary);
+      }
+
+      list.appendChild(row);
+    });
+    elements.hourlyContent.appendChild(list);
+    return;
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'glass-panel-subtle rounded-xl p-3 text-center';
+  const message = document.createElement('p');
+  message.className = 'text-white/60';
+  message.textContent = hourlyError || 'Hourly forecast unavailable';
+  panel.appendChild(message);
+  elements.hourlyContent.appendChild(panel);
+}
+
+function updateAlertsContent(html) {
+  if (!elements.alertsContainer) return;
+  elements.alertsContainer.innerHTML = html || '';
+  initAlertAreaFilters();
+  updateAlertValidityBars(new Date());
+}
+
+function applyDeferredExtras(data) {
+  if (!data || typeof data !== 'object') return;
+  if (typeof data.location_key === 'string') {
+    const trimmedKey = data.location_key.trim();
+    if (trimmedKey) {
+      currentLocationKey = trimmedKey;
+    }
+  }
+  if (data.time_zone && typeof data.time_zone === 'string') {
+    const trimmed = data.time_zone.trim();
+    if (trimmed) {
+      currentTimeZone = trimmed;
+      updateDateTime();
+      updateHourlyClock();
+    }
+  }
+  updateDailyDetails(data.daily_details);
+  updateHourlyContent(data.hourly_today, data.hourly_error);
+  if (typeof data.alerts_html === 'string') {
+    updateAlertsContent(data.alerts_html);
+  }
+  updateHumidity(data.humidity);
+  updatePrecip(data.precip_chance);
+  updateFeelsLike(data.feels_like_temperature);
+  updateActualTemp(data.actual_temperature, data.actual_temperature_unit || data.feels_like_unit);
+  updateAdvisoryBadge(Boolean(data.alerts_has_advisory));
+}
+
+async function loadDeferredExtras(coords) {
+  const latValue = Number(coords?.lat ?? coords?.latitude);
+  const lonValue = Number(coords?.lon ?? coords?.longitude);
+  if (!Number.isFinite(latValue) || !Number.isFinite(lonValue)) return;
+
+  const params = new URLSearchParams({
+    lat: latValue.toFixed(4),
+    lon: lonValue.toFixed(4),
+  });
+  if (currentLocationKey) {
+    params.set('location_key', currentLocationKey);
+  }
+
+  try {
+    const response = await fetch(`/api/extras?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    applyDeferredExtras(data);
+  } catch (error) {
+    // Ignore deferred extras failures.
+  }
+}
+
+function scheduleDeferredExtras(coords) {
+  const run = () => loadDeferredExtras(coords);
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    window.setTimeout(run, 0);
+  }
+}
+
 function handleTempChartMove(event) {
   if (!currentDayDetails || !elements.dayDetailTempChart) return;
   const hours = currentDayDetails.hours || [];
@@ -1017,6 +1199,8 @@ function initWeatherApp(options = {}) {
     dailyDetails,
     currentLocationKey: initialLocationKey,
     timeZone,
+    deferExtras,
+    coords,
   } = options;
   currentLocationKey = initialLocationKey || null;
   if (typeof timeZone === 'string') {
@@ -1032,6 +1216,9 @@ function initWeatherApp(options = {}) {
   startDateTimeTicker();
   startAutoRefresh(hasWeatherData);
   initAlertAreaFilters();
+  if (hasWeatherData && deferExtras && coords) {
+    scheduleDeferredExtras(coords);
+  }
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {

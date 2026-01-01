@@ -19,15 +19,18 @@
         {{ get_weather_icon(forecast.period.shortForecast, forecast.period.isDaytime) }}
       </div>
       <div class="now-temp-group">
-        <div class="now-temp">{{ feels_value }}&deg;</div>
+        <div class="now-temp" data-feels-like-temp>{{ feels_value }}&deg;</div>
         <div class="now-condition">{{ forecast.period.shortForecast }}</div>
       </div>
     </div>
     <div class="now-secondary">
-      <div class="now-sub">Actual {{ actual_value }}&deg;{{ unit }}</div>
-      {% if advisory.found %}
-      <div class="now-advisory advisory-blink">See advisory below</div>
-      {% endif %}
+      <div class="now-sub" data-actual-temp>Actual {{ actual_value }}&deg;{{ unit }}</div>
+      <div
+        id="advisory-badge"
+        class="now-advisory advisory-blink{% if not advisory.found %} hidden{% endif %}"
+      >
+        See advisory below
+      </div>
     </div>
   </div>
   <div class="stats-grid">
@@ -38,13 +41,13 @@
       <div class="stat-label">Wind</div>
     </div>
     <div class="stat">
-      <div class="stat-value">
+      <div class="stat-value" data-humidity-stat>
         {% if forecast.humidity is not none %}{{ forecast.humidity }}%{% else %}--{% endif %}
       </div>
       <div class="stat-label">Humidity</div>
     </div>
     <div class="stat">
-      <div class="stat-value">
+      <div class="stat-value" data-precip-stat>
         {% if forecast.precip_chance is not none %}{{ forecast.precip_chance }}%{% else %}--{% endif %}
       </div>
       <div class="stat-label">Precip</div>

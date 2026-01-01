@@ -836,7 +836,16 @@ def build_daily_details(periods, limit=7):
     return daily
 
 
-def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state=None):
+def fetch_forecast(
+    lat_value,
+    lon_value,
+    *,
+    preferred_city=None,
+    preferred_state=None,
+    preferred_location_key=None,
+    include_hourly=True,
+    include_alerts=True,
+):
     if isinstance(lat_value, str):
         lat_value = lat_value.strip()
     if isinstance(lon_value, str):
@@ -855,7 +864,11 @@ def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state
 
     # Check if we already have a canonical location for these coordinates
     cached_location_key = resolve_location_alias(coord_alias)
-    preferred_key = format_location_key(preferred_city, preferred_state)
+    preferred_key = None
+    if isinstance(preferred_location_key, str):
+        preferred_key = preferred_location_key.strip() or None
+    if not preferred_key:
+        preferred_key = format_location_key(preferred_city, preferred_state)
 
     points_url = f"https://api.weather.gov/points/{lat},{lon}"
 
@@ -922,81 +935,89 @@ def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state
     hourly_error = None
     hourly_periods = []
     daily_details = []
-    if hourly_url:
+    hourly_deferred = False
+    if include_hourly:
+        if hourly_url:
+            try:
+                hourly_data = cached_get_json(
+                    hourly_url,
+                    headers=WEATHER_GOV_HEADERS,
+                    ttl=5 * 60,
+                    cache_group=cache_group,
+                )
+                hourly_periods = hourly_data.get("properties", {}).get("periods", [])
+                hourly_today = build_hourly_today(hourly_periods)
+                daily_details = build_daily_details(hourly_periods)
+            except requests.HTTPError:
+                hourly_error = "Hourly forecast unavailable."
+            except requests.RequestException:
+                hourly_error = "Could not reach api.weather.gov."
+        else:
+            hourly_error = "Hourly forecast unavailable."
+    else:
+        hourly_deferred = True
+
+    alerts = []
+    alerts_error = None
+    alerts_deferred = False
+    if include_alerts:
+        alerts_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
         try:
-            hourly_data = cached_get_json(
-                hourly_url,
+            alerts_data = cached_get_json(
+                alerts_url,
                 headers=WEATHER_GOV_HEADERS,
                 ttl=5 * 60,
                 cache_group=cache_group,
             )
-            hourly_periods = hourly_data.get("properties", {}).get("periods", [])
-            hourly_today = build_hourly_today(hourly_periods)
-            daily_details = build_daily_details(hourly_periods)
+            for feature in alerts_data.get("features", []) or []:
+                props = feature.get("properties", {}) or {}
+                start_time = props.get("onset")
+                end_time = props.get("ends")
+                area_desc = props.get("areaDesc")
+                severity = props.get("severity")
+                severity_slug = _severity_slug(severity)
+                issued_time = format_alert_time(props.get("sent"))
+                issuer = props.get("senderName")
+                base_title = _alert_base_title(props)
+                what, impacts, description = _parse_alert_description(
+                    props.get("description")
+                )
+                long_sentence = base_title
+                if issued_time:
+                    long_sentence = f"{long_sentence} issued {issued_time}"
+                if issuer:
+                    long_sentence = f"{long_sentence} by {issuer}"
+                alerts.append(
+                    {
+                        "title": long_sentence,
+                        "event": base_title,
+                        "severity": severity,
+                        "severity_slug": severity_slug,
+                        "area": area_desc,
+                        "areas": _build_alert_areas(
+                            area_desc,
+                            lat,
+                            lon,
+                            severity_slug,
+                            props.get("affectedZones"),
+                        ),
+                        "issuer": issuer,
+                        "sent": issued_time,
+                        "start_iso": start_time,
+                        "end_iso": end_time,
+                        "start": format_alert_time(start_time),
+                        "ends": format_alert_time(end_time),
+                        "description": description,
+                        "what": what,
+                        "impacts": impacts,
+                    }
+                )
         except requests.HTTPError:
-            hourly_error = "Hourly forecast unavailable."
+            alerts_error = "Alerts unavailable."
         except requests.RequestException:
-            hourly_error = "Could not reach api.weather.gov."
+            alerts_error = "Could not reach api.weather.gov."
     else:
-        hourly_error = "Hourly forecast unavailable."
-
-    alerts = []
-    alerts_error = None
-    alerts_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
-    try:
-        alerts_data = cached_get_json(
-            alerts_url,
-            headers=WEATHER_GOV_HEADERS,
-            ttl=5 * 60,
-            cache_group=cache_group,
-        )
-        for feature in alerts_data.get("features", []) or []:
-            props = feature.get("properties", {}) or {}
-            start_time = props.get("onset")
-            end_time = props.get("ends")
-            area_desc = props.get("areaDesc")
-            severity = props.get("severity")
-            severity_slug = _severity_slug(severity)
-            issued_time = format_alert_time(props.get("sent"))
-            issuer = props.get("senderName")
-            base_title = _alert_base_title(props)
-            what, impacts, description = _parse_alert_description(
-                props.get("description")
-            )
-            long_sentence = base_title
-            if issued_time:
-                long_sentence = f"{long_sentence} issued {issued_time}"
-            if issuer:
-                long_sentence = f"{long_sentence} by {issuer}"
-            alerts.append(
-                {
-                    "title": long_sentence,
-                    "event": base_title,
-                    "severity": severity,
-                    "severity_slug": severity_slug,
-                    "area": area_desc,
-                    "areas": _build_alert_areas(
-                        area_desc,
-                        lat,
-                        lon,
-                        severity_slug,
-                        props.get("affectedZones"),
-                    ),
-                    "issuer": issuer,
-                    "sent": issued_time,
-                    "start_iso": start_time,
-                    "end_iso": end_time,
-                    "start": format_alert_time(start_time),
-                    "ends": format_alert_time(end_time),
-                    "description": description,
-                    "what": what,
-                    "impacts": impacts,
-                }
-            )
-    except requests.HTTPError:
-        alerts_error = "Alerts unavailable."
-    except requests.RequestException:
-        alerts_error = "Could not reach api.weather.gov."
+        alerts_deferred = True
 
     if location_key:
         register_location(location_key, location, lat, lon)
@@ -1050,12 +1071,14 @@ def fetch_forecast(lat_value, lon_value, *, preferred_city=None, preferred_state
         "daily_forecast": build_daily_forecast(periods),
         "alerts": alerts,
         "alerts_error": alerts_error,
+        "alerts_deferred": alerts_deferred,
         "feels_like_temperature": feels_like_temp,
         "feels_like_unit": current_unit,
         "actual_temperature": current_temp,
         "actual_temperature_unit": current_unit,
         "humidity": humidity_percent,
         "precip_chance": precip_percent,
+        "hourly_deferred": hourly_deferred,
         "location_key": location_key,
         "time_zone": time_zone,
         "period_label": period_label,

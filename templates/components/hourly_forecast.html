@@ -6,25 +6,31 @@
     <span class="hourly-clock-label">Current time:</span>
     <span id="hourly-current-time" class="hourly-clock"></span>
   </div>
-  {% if forecast.hourly_today %}
-  <div class="hourly-list">
-    {% for hour in forecast.hourly_today %}
-    <div class="hour-row">
-      <div class="hour-time">{{ hour.time }}</div>
-      <div class="hour-temp">{{ hour.temperature }}&deg;</div>
-      {% if hour.shortForecast %}
-      <div class="hour-summary">{{ hour.shortForecast }}</div>
-      {% endif %}
+  <div id="hourly-content">
+    {% if forecast.hourly_today %}
+    <div class="hourly-list">
+      {% for hour in forecast.hourly_today %}
+      <div class="hour-row">
+        <div class="hour-time">{{ hour.time }}</div>
+        <div class="hour-temp">{{ hour.temperature }}&deg;</div>
+        {% if hour.shortForecast %}
+        <div class="hour-summary">{{ hour.shortForecast }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+    {% elif forecast.hourly_deferred %}
+    <div class="glass-panel-subtle rounded-xl p-3 text-center">
+      <p class="text-white/60">Loading hourly forecast...</p>
+    </div>
+    {% elif forecast.hourly_error %}
+    <div class="glass-panel-subtle rounded-xl p-3 text-center">
+      <p class="text-white/60">{{ forecast.hourly_error }}</p>
+    </div>
+    {% else %}
+    <div class="glass-panel-subtle rounded-xl p-3 text-center">
+      <p class="text-white/60">Hourly forecast unavailable</p>
+    </div>
+    {% endif %}
   </div>
-  {% elif forecast.hourly_error %}
-  <div class="glass-panel-subtle rounded-xl p-3 text-center">
-    <p class="text-white/60">{{ forecast.hourly_error }}</p>
-  </div>
-  {% else %}
-  <div class="glass-panel-subtle rounded-xl p-3 text-center">
-    <p class="text-white/60">Hourly forecast unavailable</p>
-  </div>
-  {% endif %}
 </section>

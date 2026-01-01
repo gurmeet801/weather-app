@@ -45,6 +45,38 @@ def inject_asset_version():
     return {"asset_version": ASSET_VERSION}
 
 
+def _get_default_location_query():
+    value = os.getenv("DEFAULT_LOCATION", "16066")
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _parse_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _resolve_default_location():
+    query = _get_default_location_query()
+    if not query:
+        return None, "Default location not configured."
+    lat, lon, city, state, resolved_location, error = geocode_address(query)
+    if error:
+        return None, error
+    return {
+        "query": query,
+        "lat": lat,
+        "lon": lon,
+        "city": city,
+        "state": state,
+        "resolved_location": resolved_location,
+    }, None
+
+
 @app.route("/manifest.webmanifest")
 def manifest():
     response = make_response(app.send_static_file("manifest.webmanifest"))
@@ -64,6 +96,7 @@ def index():
     address = request.args.get("address", "").strip()
     lat = request.args.get("lat")
     lon = request.args.get("lon")
+    defer_extras = request.args.get("eager") != "1"
     cached_lat = request.cookies.get("last_lat")
     cached_lon = request.cookies.get("last_lon")
     forecast = None
@@ -74,7 +107,12 @@ def index():
     current_location_key = None
 
     if lat and lon:
-        forecast, error = fetch_forecast(lat, lon)
+        forecast, error = fetch_forecast(
+            lat,
+            lon,
+            include_hourly=not defer_extras,
+            include_alerts=not defer_extras,
+        )
         search_source = "Current location"
         if forecast and not error:
             current_location_key = forecast.get("location_key")
@@ -83,7 +121,12 @@ def index():
         search_source = "Address search"
         if not error:
             forecast, error = fetch_forecast(
-                lat, lon, preferred_city=city, preferred_state=state
+                lat,
+                lon,
+                preferred_city=city,
+                preferred_state=state,
+                include_hourly=not defer_extras,
+                include_alerts=not defer_extras,
             )
             if forecast and not error:
                 current_location_key = forecast.get("location_key")
@@ -94,11 +137,42 @@ def index():
                     register_location_alias(address_alias, canonical_key)
     elif cached_lat and cached_lon:
         lat, lon = cached_lat, cached_lon
-        forecast, error = fetch_forecast(lat, lon)
+        forecast, error = fetch_forecast(
+            lat,
+            lon,
+            include_hourly=not defer_extras,
+            include_alerts=not defer_extras,
+        )
         search_source = "Recent location"
         used_cached_location = True
         if forecast and not error:
             current_location_key = forecast.get("location_key")
+    else:
+        default_location, default_error = _resolve_default_location()
+        if default_location:
+            lat = default_location["lat"]
+            lon = default_location["lon"]
+            resolved_location = default_location["resolved_location"]
+            search_source = "Default location"
+            forecast, error = fetch_forecast(
+                lat,
+                lon,
+                preferred_city=default_location["city"],
+                preferred_state=default_location["state"],
+                include_hourly=not defer_extras,
+                include_alerts=not defer_extras,
+            )
+            if forecast and not error:
+                current_location_key = forecast.get("location_key")
+        else:
+            error = default_error
+
+    resolved_coords = None
+    if lat is not None and lon is not None:
+        lat_value = _parse_float(lat)
+        lon_value = _parse_float(lon)
+        if lat_value is not None and lon_value is not None:
+            resolved_coords = {"lat": lat_value, "lon": lon_value}
 
     cached_locations = list_cached_locations()
     response = make_response(
@@ -112,6 +186,8 @@ def index():
             used_cached_location=used_cached_location,
             cached_locations=cached_locations,
             current_location_key=current_location_key,
+            defer_extras=defer_extras,
+            resolved_coords=resolved_coords,
         )
     )
     if forecast and not error and lat and lon:
@@ -144,6 +220,74 @@ def refresh_cache():
     else:
         clear_cache()
     return {"status": "ok"}
+
+
+@app.route("/api/extras")
+def forecast_extras():
+    lat_value = _parse_float(request.args.get("lat"))
+    lon_value = _parse_float(request.args.get("lon"))
+    if lat_value is None or lon_value is None:
+        return {"error": "Missing coordinates."}, 400
+
+    location_key = request.args.get("location_key")
+    if isinstance(location_key, str):
+        location_key = location_key.strip() or None
+
+    forecast, error = fetch_forecast(
+        lat_value,
+        lon_value,
+        preferred_location_key=location_key,
+        include_hourly=True,
+        include_alerts=True,
+    )
+    if error:
+        return {"error": error}, 400
+
+    alerts = forecast.get("alerts") or []
+    has_advisory = any(
+        "advisory" in (alert.get("event") or "").lower() for alert in alerts
+    )
+    alerts_html = render_template("components/alerts.html", forecast=forecast)
+
+    return {
+        "hourly_today": forecast.get("hourly_today", []),
+        "hourly_error": forecast.get("hourly_error"),
+        "daily_details": forecast.get("daily_details", []),
+        "humidity": forecast.get("humidity"),
+        "precip_chance": forecast.get("precip_chance"),
+        "feels_like_temperature": forecast.get("feels_like_temperature"),
+        "feels_like_unit": forecast.get("feels_like_unit"),
+        "actual_temperature": forecast.get("actual_temperature"),
+        "actual_temperature_unit": forecast.get("actual_temperature_unit"),
+        "alerts_html": alerts_html,
+        "alerts_has_advisory": has_advisory,
+        "location_key": forecast.get("location_key"),
+        "time_zone": forecast.get("time_zone"),
+    }
+
+
+@app.route("/warm")
+def warm_default_location():
+    default_location, error = _resolve_default_location()
+    if error:
+        return {"status": "error", "error": error}, 500
+
+    forecast, error = fetch_forecast(
+        default_location["lat"],
+        default_location["lon"],
+        preferred_city=default_location["city"],
+        preferred_state=default_location["state"],
+        include_hourly=True,
+        include_alerts=True,
+    )
+    if error:
+        return {"status": "error", "error": error}, 502
+
+    return {
+        "status": "ok",
+        "location": forecast.get("location"),
+        "location_key": forecast.get("location_key"),
+    }
 
 
 if __name__ == "__main__":

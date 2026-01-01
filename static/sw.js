@@ -1,6 +1,7 @@
 const SW_VERSION = new URL(self.location.href).searchParams.get('v') || 'v1';
 const CACHE_NAME = `weather-shell-${SW_VERSION}`;
 const RUNTIME_CACHE = `weather-runtime-${SW_VERSION}`;
+const NAVIGATION_TIMEOUT_MS = 3000;
 
 const PRECACHE_URLS = [
   '/',
@@ -63,21 +64,65 @@ function stashResponse(request, response) {
   caches
     .open(RUNTIME_CACHE)
     .then((cache) => cache.put(request, responseClone))
-    .catch(() => {});
+      .catch(() => {});
 }
 
-function networkFirst(request) {
-  return fetch(request)
-    .then((response) => {
-      stashResponse(request, response);
-      return response;
-    })
-    .catch(() =>
-      caches.match(request, { ignoreSearch: true }).then((cached) => {
+function matchNavigationCache(request) {
+  try {
+    const requestUrl = new URL(request.url);
+    if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/' && !requestUrl.search) {
+      return caches.match(request, { ignoreSearch: true });
+    }
+  } catch (error) {
+    // Fall back to default cache lookup.
+  }
+  return caches.match(request);
+}
+
+function networkFirst(request, { timeoutMs = 0, cacheMatch } = {}) {
+  const cacheLookup = cacheMatch || ((req) => caches.match(req, { ignoreSearch: true }));
+  const fetchPromise = fetch(request).then((response) => {
+    stashResponse(request, response);
+    return response;
+  });
+
+  if (!timeoutMs) {
+    return fetchPromise.catch(() =>
+      cacheLookup(request).then((cached) => {
         if (cached) return cached;
         return caches.match('/static/offline.html', { ignoreSearch: true });
       })
     );
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finalize = (response) => {
+      if (settled || !response) return;
+      settled = true;
+      resolve(response);
+    };
+
+    const timeoutId = setTimeout(() => {
+      cacheLookup(request).then((cached) => {
+        finalize(cached);
+      });
+    }, timeoutMs);
+
+    fetchPromise
+      .then((response) => {
+        clearTimeout(timeoutId);
+        finalize(response);
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        cacheLookup(request).then((cached) => {
+          if (cached) return finalize(cached);
+          return caches.match('/static/offline.html', { ignoreSearch: true }).then(finalize);
+        });
+      });
+  });
 }
 
 function staleWhileRevalidate(request) {
@@ -98,7 +143,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (event.request.mode === 'navigate') {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(
+      networkFirst(event.request, {
+        timeoutMs: NAVIGATION_TIMEOUT_MS,
+        cacheMatch: matchNavigationCache,
+      })
+    );
     return;
   }
 

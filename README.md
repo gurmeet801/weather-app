@@ -16,10 +16,6 @@ python app.py
 
 Open http://127.0.0.1:4200 in your browser.
 
-## Deploy
-
-- Railway runs the app via `Procfile` using Gunicorn and expects `$PORT`.
-
 ## Notes
 
 - Search by address or use your current location; the app geocodes addresses with

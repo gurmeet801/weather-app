@@ -1,6 +1,10 @@
 {# Weather Alerts Component #}
 {# Variables: forecast (required) #}
-{% if forecast.alerts %}
+{% if forecast.alerts_deferred %}
+<div class="mb-4 sm:mb-6 glass-card rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-white/10 bg-white/5">
+  <p class="text-white/60 text-[11px] sm:text-xs text-center">Loading alerts...</p>
+</div>
+{% elif forecast.alerts %}
 <div class="alerts-stack">
   {% for alert in forecast.alerts %}
   <article class="alert-modern alert-modern--{{ alert.severity_slug }}">

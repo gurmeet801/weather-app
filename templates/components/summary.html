@@ -11,11 +11,15 @@
     {% if today and today.low is not none %}
     <div class="chip">Low {{ today.low }}&deg;</div>
     {% endif %}
-    {% if forecast.humidity is not none %}
-    <div class="chip">Humidity {{ forecast.humidity }}%</div>
+    {% if forecast.humidity is not none or forecast.hourly_deferred %}
+    <div class="chip">
+      Humidity <span data-humidity-value>{{ forecast.humidity if forecast.humidity is not none else '--' }}</span>%
+    </div>
     {% endif %}
-    {% if forecast.precip_chance is not none %}
-    <div class="chip">Precip {{ forecast.precip_chance }}%</div>
+    {% if forecast.precip_chance is not none or forecast.hourly_deferred %}
+    <div class="chip">
+      Precip <span data-precip-value>{{ forecast.precip_chance if forecast.precip_chance is not none else '--' }}</span>%
+    </div>
     {% endif %}
   </div>
 </section>
