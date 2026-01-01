@@ -12,6 +12,7 @@ from utils import (
     format_location_key,
     format_coordinate_alias,
     format_alert_time,
+    format_display_datetime,
     format_hour_label,
     get_weather_headers,
     location_group_key,
@@ -171,6 +172,17 @@ def _zone_id_from_url(url):
         path = str(url)
     parts = [part for part in path.split("/") if part]
     return parts[-1] if parts else None
+
+
+def _station_id_from_feature(feature):
+    if not feature or not isinstance(feature, dict):
+        return None
+    props = feature.get("properties") or {}
+    station_id = props.get("stationIdentifier") or props.get("id")
+    if station_id:
+        station_id = str(station_id).strip()
+        return _zone_id_from_url(station_id) if "/" in station_id else station_id
+    return _zone_id_from_url(feature.get("id"))
 
 
 def _polygon_centroid_with_area(points):
@@ -628,6 +640,25 @@ def _forecast_overview_label(period, time_zone=None):
     return "Forecast Overview"
 
 
+def _format_time_label(dt, time_zone=None):
+    if not dt:
+        return None
+    if time_zone:
+        try:
+            tzinfo = ZoneInfo(time_zone)
+            if dt.tzinfo:
+                dt = dt.astimezone(tzinfo)
+            else:
+                dt = dt.replace(tzinfo=tzinfo)
+        except Exception:
+            pass
+    label = format_display_datetime(dt)
+    if not label:
+        return None
+    tz_label = dt.tzname() if dt.tzinfo else None
+    return f"{label} {tz_label}" if tz_label else label
+
+
 def _format_display_location(primary_label, near_label=None):
     if not primary_label:
         return near_label
@@ -648,6 +679,64 @@ def _from_fahrenheit(temp, unit):
     if unit == "C":
         return (temp - 32) * 5 / 9
     return temp
+
+
+def _extract_measurement(measurement):
+    if not measurement or not isinstance(measurement, dict):
+        return None, None
+    unit_code = measurement.get("unitCode")
+    value = measurement.get("value")
+    if value is None:
+        return None, unit_code
+    try:
+        return float(value), unit_code
+    except (TypeError, ValueError):
+        return None, unit_code
+
+
+def _parse_observation_temperature(measurement):
+    value, unit_code = _extract_measurement(measurement)
+    if value is None:
+        return None, None
+    code = str(unit_code or "").lower()
+    if code.endswith("degc"):
+        return value, "C"
+    if code.endswith("degf"):
+        return value, "F"
+    return None, None
+
+
+def _convert_temperature(value, from_unit, to_unit):
+    if value is None or not from_unit or not to_unit:
+        return value
+    if from_unit == to_unit:
+        return value
+    if from_unit == "C" and to_unit == "F":
+        return _to_fahrenheit(value, "C")
+    if from_unit == "F" and to_unit == "C":
+        return _from_fahrenheit(value, "C")
+    return value
+
+
+def _parse_observation_humidity(measurement):
+    value, _unit_code = _extract_measurement(measurement)
+    return value
+
+
+def _parse_observation_wind_mph(measurement):
+    value, unit_code = _extract_measurement(measurement)
+    if value is None:
+        return None
+    code = str(unit_code or "").lower()
+    if code.endswith("m_s-1") or code.endswith("m/s"):
+        return value * 2.236936292
+    if code.endswith("km_h-1") or code.endswith("km/h"):
+        return value * 0.621371
+    if code.endswith("kt"):
+        return value * 1.15078
+    if code.endswith("mi_h-1") or code.endswith("mph"):
+        return value
+    return None
 
 
 def _calculate_feels_like(temp, unit, humidity=None, wind_mph=None):
@@ -683,9 +772,15 @@ def build_hourly_today(periods, limit=24):
     if not periods or limit <= 0:
         return []
     hourly = []
+    cutoff = None
     for period in periods:
         dt = parse_iso_datetime(period.get("startTime"))
         if not dt:
+            continue
+        if cutoff is None:
+            now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+            cutoff = now.replace(minute=0, second=0, microsecond=0)
+        if cutoff and dt < cutoff:
             continue
         hourly.append(
             {
@@ -697,7 +792,25 @@ def build_hourly_today(periods, limit=24):
         )
         if len(hourly) >= limit:
             break
-    return hourly
+    if hourly:
+        return hourly
+
+    fallback = []
+    for period in periods:
+        dt = parse_iso_datetime(period.get("startTime"))
+        if not dt:
+            continue
+        fallback.append(
+            {
+                "time": format_hour_label(dt),
+                "temperature": period.get("temperature"),
+                "temperatureUnit": period.get("temperatureUnit"),
+                "shortForecast": period.get("shortForecast"),
+            }
+        )
+        if len(fallback) >= limit:
+            break
+    return fallback
 
 
 def build_daily_forecast(periods, limit=7):
@@ -889,6 +1002,7 @@ def fetch_forecast(
     time_zone = points_props.get("timeZone")
     forecast_url = points_props.get("forecast")
     hourly_url = points_props.get("forecastHourly")
+    stations_url = points_props.get("observationStations")
     if not forecast_url:
         return None, "No forecast URL available for that location."
 
@@ -927,15 +1041,22 @@ def fetch_forecast(
     except requests.RequestException:
         return None, "Could not reach api.weather.gov."
 
-    periods = forecast_data.get("properties", {}).get("periods", [])
+    forecast_props = forecast_data.get("properties", {}) or {}
+    periods = forecast_props.get("periods", [])
     if not periods:
         return None, "No forecast periods available for that location."
+    forecast_updated = parse_iso_datetime(
+        forecast_props.get("updateTime")
+        or forecast_props.get("updated")
+        or forecast_props.get("generatedAt")
+    )
 
     hourly_today = []
     hourly_error = None
     hourly_periods = []
     daily_details = []
     hourly_deferred = False
+    hourly_updated = None
     if include_hourly:
         if hourly_url:
             try:
@@ -945,7 +1066,13 @@ def fetch_forecast(
                     ttl=5 * 60,
                     cache_group=cache_group,
                 )
-                hourly_periods = hourly_data.get("properties", {}).get("periods", [])
+                hourly_props = hourly_data.get("properties", {}) or {}
+                hourly_updated = parse_iso_datetime(
+                    hourly_props.get("updateTime")
+                    or hourly_props.get("updated")
+                    or hourly_props.get("generatedAt")
+                )
+                hourly_periods = hourly_props.get("periods", [])
                 hourly_today = build_hourly_today(hourly_periods)
                 daily_details = build_daily_details(hourly_periods)
             except requests.HTTPError:
@@ -956,6 +1083,80 @@ def fetch_forecast(
             hourly_error = "Hourly forecast unavailable."
     else:
         hourly_deferred = True
+
+    observation_label = None
+    observation_temp = None
+    observation_unit = None
+    observation_humidity = None
+    observation_wind_mph = None
+    if stations_url:
+        try:
+            stations_data = cached_get_json(
+                stations_url,
+                headers=WEATHER_GOV_HEADERS,
+                ttl=6 * 60 * 60,
+                cache_group="points_api",
+            )
+            station_features = stations_data.get("features", []) or []
+            station_ids = []
+            for feature in station_features:
+                station_id = _station_id_from_feature(feature)
+                if station_id and station_id not in station_ids:
+                    station_ids.append(station_id)
+                if len(station_ids) >= 5:
+                    break
+
+            best_props = None
+            best_dt = None
+            best_timestamp = None
+            for station_id in station_ids:
+                try:
+                    observation_url = (
+                        f"https://api.weather.gov/stations/{station_id}/observations/latest"
+                    )
+                    observation_data = cached_get_json(
+                        observation_url,
+                        headers=WEATHER_GOV_HEADERS,
+                        ttl=60,
+                        cache_group=cache_group,
+                    )
+                    observation_props = observation_data.get("properties", {}) or {}
+                    observation_dt = parse_iso_datetime(observation_props.get("timestamp"))
+                    if not observation_dt:
+                        continue
+                    if observation_dt.tzinfo is None and time_zone:
+                        try:
+                            observation_dt = observation_dt.replace(tzinfo=ZoneInfo(time_zone))
+                        except Exception:
+                            pass
+                    try:
+                        timestamp_value = observation_dt.timestamp()
+                    except (OSError, ValueError, OverflowError):
+                        continue
+                    if best_timestamp is None or timestamp_value > best_timestamp:
+                        best_timestamp = timestamp_value
+                        best_dt = observation_dt
+                        best_props = observation_props
+                except requests.HTTPError:
+                    continue
+                except requests.RequestException:
+                    continue
+
+            if best_props:
+                observation_label = _format_time_label(best_dt, time_zone)
+                observation_temp, observation_unit = _parse_observation_temperature(
+                    best_props.get("temperature")
+                )
+                observation_humidity = _parse_observation_humidity(
+                    best_props.get("relativeHumidity")
+                )
+                observation_wind_mph = _parse_observation_wind_mph(
+                    best_props.get("windSpeed")
+                )
+        except requests.HTTPError:
+            observation_label = None
+        except requests.RequestException:
+            observation_label = None
 
     alerts = []
     alerts_error = None
@@ -1047,6 +1248,17 @@ def fetch_forecast(
             precip_value = None
         wind_speed_mph = _parse_wind_speed_mph(hourly_current.get("windSpeed")) or wind_speed_mph
 
+    if observation_temp is not None and observation_unit:
+        target_unit = current_unit or observation_unit
+        converted = _convert_temperature(observation_temp, observation_unit, target_unit)
+        if converted is not None:
+            current_temp = int(round(converted))
+            current_unit = target_unit
+    if observation_humidity is not None:
+        humidity_value = observation_humidity
+    if observation_wind_mph is not None:
+        wind_speed_mph = observation_wind_mph
+
     feels_like_temp = _calculate_feels_like(
         current_temp, current_unit, humidity_value, wind_speed_mph
     )
@@ -1059,6 +1271,11 @@ def fetch_forecast(
     precip_percent = (
         int(round(precip_value)) if isinstance(precip_value, (int, float)) else None
     )
+    updated_dt = hourly_updated or forecast_updated
+    forecast_updated_label = _format_time_label(updated_dt, time_zone)
+    data_source = hourly_periods[0] if hourly_periods else periods[0]
+    data_dt = parse_iso_datetime(data_source.get("startTime"))
+    forecast_data_label = _format_time_label(data_dt, time_zone)
     period_label = _forecast_overview_label(periods[0], time_zone)
 
     return {
@@ -1081,5 +1298,8 @@ def fetch_forecast(
         "hourly_deferred": hourly_deferred,
         "location_key": location_key,
         "time_zone": time_zone,
+        "forecast_updated_label": forecast_updated_label,
+        "forecast_data_label": forecast_data_label,
+        "observation_label": observation_label,
         "period_label": period_label,
     }, None

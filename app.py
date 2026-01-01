@@ -262,6 +262,8 @@ def forecast_extras():
         "alerts_html": alerts_html,
         "alerts_has_advisory": has_advisory,
         "location_key": forecast.get("location_key"),
+        "forecast_data_label": forecast.get("forecast_data_label"),
+        "observation_label": forecast.get("observation_label"),
         "time_zone": forecast.get("time_zone"),
     }
 

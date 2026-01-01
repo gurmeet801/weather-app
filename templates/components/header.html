@@ -3,7 +3,19 @@
 <header class="topbar">
   <div class="location">
     <h1>{{ forecast.location }}</h1>
-    <p class="datetime" id="datetime">{{ forecast.period.name }}</p>
+    {% set observation_label = forecast.observation_label %}
+    <p
+      class="datetime"
+      id="datetime"
+      data-datetime-mode="forecast"
+      data-observation-label="{{ observation_label or '' }}"
+    >
+      {% if observation_label %}
+        Observed {{ observation_label }}
+      {% else %}
+        {{ forecast.period.name }}
+      {% endif %}
+    </p>
   </div>
   <div class="actions">
     <button id="refresh-weather" type="button" class="btn primary">

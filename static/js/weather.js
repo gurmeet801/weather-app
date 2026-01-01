@@ -872,10 +872,30 @@ function updateDateTime() {
   const now = new Date();
   const target = document.getElementById('datetime');
   const label = formatDateTimeLabel(now, currentTimeZone);
-  if (target && label) {
+  const shouldUpdateLabel = target?.dataset?.datetimeMode === 'current';
+  if (target && label && shouldUpdateLabel) {
     target.textContent = label;
   }
   updateAlertValidityBars(now);
+}
+
+function normalizeHeaderLabel(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/^(as of|forecast for|observed)\s+/i, '').trim();
+}
+
+function updateHeaderTimestamp({ observationLabel } = {}) {
+  const target = document.getElementById('datetime');
+  if (!target || target.dataset?.datetimeMode !== 'forecast') return;
+
+  if (typeof observationLabel === 'string') {
+    target.dataset.observationLabel = normalizeHeaderLabel(observationLabel);
+  }
+
+  const observationText = normalizeHeaderLabel(target.dataset.observationLabel || '');
+  if (!observationText) return;
+
+  target.textContent = `Observed ${observationText}`;
 }
 
 function updateHourlyClock() {
@@ -1035,6 +1055,9 @@ function applyDeferredExtras(data) {
       updateHourlyClock();
     }
   }
+  if (typeof data.observation_label === 'string') {
+    updateHeaderTimestamp({ observationLabel: data.observation_label });
+  }
   updateDailyDetails(data.daily_details);
   updateHourlyContent(data.hourly_today, data.hourly_error);
   if (typeof data.alerts_html === 'string') {
@@ -1147,7 +1170,7 @@ async function sendLocationCacheAction(action, locationKey) {
 /**
  * Refresh the currently displayed location
  */
-async function refreshCurrentLocation({ showLoading: shouldShowLoading = true } = {}) {
+async function refreshCurrentLocation({ showLoading: shouldShowLoading = false } = {}) {
   if (shouldShowLoading) {
     showLoading('Refreshing current location...');
   }
@@ -1272,7 +1295,7 @@ function initWeatherApp(options = {}) {
   elements.switchModalBackdrop?.addEventListener('click', closeSwitchModal);
 
   elements.refreshBtn?.addEventListener('click', () => {
-    refreshCurrentLocation({ showLoading: true });
+    refreshCurrentLocation();
   });
   elements.dayDetailBackdrop?.addEventListener('click', closeDayDetailModal);
   elements.dayDetailCloseBtn?.addEventListener('click', closeDayDetailModal);
