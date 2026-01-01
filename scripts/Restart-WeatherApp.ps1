@@ -43,7 +43,7 @@ function Get-EnvValueFromFile {
 }
 
 $envFile = Join-Path $repoRoot ".env"
-$port = if ($env:PORT) { $env:PORT } else { Get-EnvValueFromFile -Path $envFile -Name "PORT" }
+$port = if ($env:WEATHER_APP_PORT) { $env:WEATHER_APP_PORT } else { Get-EnvValueFromFile -Path $envFile -Name "WEATHER_APP_PORT" }
 if (-not $port) {
     $port = "4200"
 }

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 from datetime import datetime
@@ -50,23 +51,32 @@ def _resolve_cache_path(cache_path):
     return str((repo_root / path).resolve())
 
 
-DEFAULT_USER_AGENT = "(weather.jawand.dev, jawandsingh@gmail.com)"
-CACHE_FILE = _resolve_cache_path(os.getenv("WEATHER_CACHE_FILE", "/data/weather_cache.json"))
+_LOGGER = logging.getLogger(__name__)
+
+
+def _required_env(name):
+    value = os.getenv(name)
+    if not value:
+        _LOGGER.error("Required environment variable %s is not set. Add it to .env.", name)
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+USER_AGENT = _required_env("WEATHER_GOV_USER_AGENT")
+CACHE_FILE = _resolve_cache_path(_required_env("WEATHER_CACHE_FILE"))
 CACHE_LOCK = Lock()
 
 
 def get_weather_headers():
-    user_agent = os.getenv("WEATHER_GOV_USER_AGENT", DEFAULT_USER_AGENT)
     return {
-        "User-Agent": user_agent,
+        "User-Agent": USER_AGENT,
         "Accept": "application/geo+json",
     }
 
 
 def get_geocoder_headers():
-    user_agent = os.getenv("WEATHER_GOV_USER_AGENT", DEFAULT_USER_AGENT)
     return {
-        "User-Agent": user_agent,
+        "User-Agent": USER_AGENT,
         "Accept": "application/json",
         "Accept-Language": "en",
     }

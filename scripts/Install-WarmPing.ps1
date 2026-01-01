@@ -7,6 +7,8 @@
 #   .\scripts\Install-WarmPing.ps1
 #   .\scripts\Install-WarmPing.ps1 -IntervalMinutes 15
 #   .\scripts\Install-WarmPing.ps1 -UserName "DOMAIN\\user"
+#   .\scripts\Install-WarmPing.ps1 -UserName "DOMAIN\\user" -Password "P@ssw0rd"
+#   .\scripts\Install-WarmPing.ps1 -TaskName "WeatherAppWarmPing"
 #   .\scripts\Install-WarmPing.ps1 -Force
 
 [CmdletBinding()]
@@ -104,7 +106,7 @@ if ($existingTask) {
 
 $startTime = (Get-Date).AddMinutes(1)
 $envFile = Join-Path $ProjectRoot ".env"
-$port = if ($env:PORT) { $env:PORT } else { Get-EnvValueFromFile -Path $envFile -Name "PORT" }
+$port = if ($env:WEATHER_APP_PORT) { $env:WEATHER_APP_PORT } else { Get-EnvValueFromFile -Path $envFile -Name "WEATHER_APP_PORT" }
 if (-not $port) {
     $port = "4200"
 }
@@ -115,11 +117,18 @@ $action = New-ScheduledTaskAction `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PingScript`"" `
     -WorkingDirectory $ProjectRoot
 
-$trigger = New-ScheduledTaskTrigger `
-    -Daily `
-    -At $startTime `
-    -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
-    -RepetitionDuration (New-TimeSpan -Days 1)
+$repetitionIntervalIso = "PT{0}M" -f $IntervalMinutes
+$repetitionDurationIso = "P1D"
+$trigger = New-ScheduledTaskTrigger -Daily -At $startTime
+$trigger.Repetition = New-CimInstance `
+    -ClassName MSFT_TaskRepetitionPattern `
+    -Namespace Root/Microsoft/Windows/TaskScheduler `
+    -Property @{
+        Interval = $repetitionIntervalIso
+        Duration = $repetitionDurationIso
+        StopAtDurationEnd = $false
+    } `
+    -ClientOnly
 
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `

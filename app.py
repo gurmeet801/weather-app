@@ -291,5 +291,5 @@ def warm_default_location():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "4200"))
+    port = int(os.getenv("WEATHER_APP_PORT", "4200"))
     app.run(debug=False, host="0.0.0.0", port=port)
