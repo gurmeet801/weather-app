@@ -96,6 +96,9 @@ def index():
     address = request.args.get("address", "").strip()
     lat = request.args.get("lat")
     lon = request.args.get("lon")
+    station_id = request.args.get("station")
+    if isinstance(station_id, str):
+        station_id = station_id.strip() or None
     defer_extras = request.args.get("eager") != "1"
     cached_lat = request.cookies.get("last_lat")
     cached_lon = request.cookies.get("last_lon")
@@ -110,6 +113,7 @@ def index():
         forecast, error = fetch_forecast(
             lat,
             lon,
+            preferred_station_id=station_id,
             include_hourly=not defer_extras,
             include_alerts=not defer_extras,
         )
@@ -125,6 +129,7 @@ def index():
                 lon,
                 preferred_city=city,
                 preferred_state=state,
+                preferred_station_id=station_id,
                 include_hourly=not defer_extras,
                 include_alerts=not defer_extras,
             )
@@ -140,6 +145,7 @@ def index():
         forecast, error = fetch_forecast(
             lat,
             lon,
+            preferred_station_id=station_id,
             include_hourly=not defer_extras,
             include_alerts=not defer_extras,
         )
@@ -159,6 +165,7 @@ def index():
                 lon,
                 preferred_city=default_location["city"],
                 preferred_state=default_location["state"],
+                preferred_station_id=station_id,
                 include_hourly=not defer_extras,
                 include_alerts=not defer_extras,
             )
@@ -232,11 +239,15 @@ def forecast_extras():
     location_key = request.args.get("location_key")
     if isinstance(location_key, str):
         location_key = location_key.strip() or None
+    station_id = request.args.get("station")
+    if isinstance(station_id, str):
+        station_id = station_id.strip() or None
 
     forecast, error = fetch_forecast(
         lat_value,
         lon_value,
         preferred_location_key=location_key,
+        preferred_station_id=station_id,
         include_hourly=True,
         include_alerts=True,
     )
@@ -266,6 +277,7 @@ def forecast_extras():
         "observation_label": forecast.get("observation_label"),
         "observation_station": forecast.get("observation_station"),
         "observation_timestamp": forecast.get("observation_timestamp"),
+        "observation_station_id": forecast.get("observation_station_id"),
         "time_zone": forecast.get("time_zone"),
     }
 

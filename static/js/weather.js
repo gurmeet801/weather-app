@@ -83,6 +83,7 @@ const ALERT_RADIUS_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
 let pendingSwitchLocation = null;
 let locationRequestId = 0;
 let currentLocationKey = null;
+let currentObservationStationId = null;
 let dailyDetailsMap = new Map();
 let currentDayDetails = null;
 let currentDayUnit = '';
@@ -306,6 +307,21 @@ function redirectToLocation(coords) {
   const lat = latValue.toFixed(4);
   const lon = lonValue.toFixed(4);
   window.location = `/?lat=${lat}&lon=${lon}`;
+}
+
+function selectObservationStation(stationId) {
+  if (!stationId) return;
+  const params = new URLSearchParams(window.location.search);
+  params.set('station', stationId);
+  const url = `${window.location.pathname}?${params.toString()}`;
+  window.location = url;
+}
+
+function updateStationButtons(activeId) {
+  document.querySelectorAll('[data-station-id]').forEach((button) => {
+    const isActive = activeId && button.dataset.stationId === activeId;
+    button.classList.toggle('is-active', Boolean(isActive));
+  });
 }
 
 /**
@@ -1095,6 +1111,11 @@ function applyDeferredExtras(data) {
       observationTimestamp: data.observation_timestamp,
     });
   }
+  if (typeof data.observation_station_id === 'string') {
+    const trimmed = data.observation_station_id.trim();
+    currentObservationStationId = trimmed ? trimmed : null;
+    updateStationButtons(currentObservationStationId);
+  }
   updateDailyDetails(data.daily_details);
   updateHourlyContent(data.hourly_today, data.hourly_error);
   if (typeof data.alerts_html === 'string') {
@@ -1118,6 +1139,9 @@ async function loadDeferredExtras(coords) {
   });
   if (currentLocationKey) {
     params.set('location_key', currentLocationKey);
+  }
+  if (currentObservationStationId) {
+    params.set('station', currentObservationStationId);
   }
 
   try {
@@ -1258,11 +1282,14 @@ function initWeatherApp(options = {}) {
     hasLocationParams,
     dailyDetails,
     currentLocationKey: initialLocationKey,
+    observationStationId,
     timeZone,
     deferExtras,
     coords,
   } = options;
   currentLocationKey = initialLocationKey || null;
+  currentObservationStationId = observationStationId || null;
+  updateStationButtons(currentObservationStationId);
   if (typeof timeZone === 'string') {
     const trimmed = timeZone.trim();
     currentTimeZone = trimmed ? trimmed : null;
@@ -1361,6 +1388,14 @@ function initWeatherApp(options = {}) {
       showLoading(label ? `Switching to ${label}...` : 'Switching location...');
       redirectToLocation({ lat, lon });
     }
+  });
+
+  document.querySelectorAll('[data-station-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const stationId = button.dataset.stationId;
+      if (!stationId) return;
+      selectObservationStation(stationId);
+    });
   });
 
   const tempContainer = elements.dayDetailTempChart?.parentElement;

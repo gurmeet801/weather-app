@@ -1,36 +1,56 @@
 {# Weather Header Component #}
 {# Variables: forecast (required) #}
-<header class="topbar">
-  <div class="location">
-    <h1>{{ forecast.location }}</h1>
-    {% set observation_label = forecast.observation_label %}
-    <p
-      class="datetime"
-      id="datetime"
-      data-datetime-mode="forecast"
-      data-observation-label="{{ observation_label or '' }}"
-      data-observation-station="{{ forecast.observation_station or '' }}"
-      data-observation-timestamp="{{ forecast.observation_timestamp or '' }}"
-    >
-      {% if observation_label %}
-        Observed {{ observation_label }}{% if forecast.observation_station %} - {{ forecast.observation_station }}{% endif %}
-      {% else %}
-        {{ forecast.period.name }}
-      {% endif %}
-    </p>
+<header class="header">
+  <div class="topbar">
+    <div class="location">
+      <h1>{{ forecast.location }}</h1>
+      {% set observation_label = forecast.observation_label %}
+      <p
+        class="datetime"
+        id="datetime"
+        data-datetime-mode="forecast"
+        data-observation-label="{{ observation_label or '' }}"
+        data-observation-station="{{ forecast.observation_station or '' }}"
+        data-observation-timestamp="{{ forecast.observation_timestamp or '' }}"
+      >
+        {% if observation_label %}
+          Observed {{ observation_label }}{% if forecast.observation_station %} - {{ forecast.observation_station }}{% endif %}
+        {% else %}
+          {{ forecast.period.name }}
+        {% endif %}
+      </p>
+    </div>
+    <div class="actions">
+      <button id="refresh-weather" type="button" class="btn primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        Refresh
+      </button>
+      <button id="toggle-location" type="button" class="btn">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        Location
+      </button>
+    </div>
   </div>
-  <div class="actions">
-    <button id="refresh-weather" type="button" class="btn primary">
-      <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-      </svg>
-      Refresh
-    </button>
-    <button id="toggle-location" type="button" class="btn">
-      <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-      </svg>
-      Location
-    </button>
+  {% if forecast.observation_stations %}
+  <div class="station-picker">
+    <span class="station-label">Stations</span>
+    <div class="station-buttons">
+      {% for station in forecast.observation_stations %}
+      <button
+        type="button"
+        class="btn station-btn{% if station.id == forecast.observation_station_id %} is-active{% endif %}"
+        data-station-id="{{ station.id }}"
+        title="{{ station.name }} ({{ station.distance_mi }} mi)"
+        aria-label="Station {{ loop.index }}: {{ station.name }} ({{ station.distance_mi }} miles)"
+      >
+        {{ loop.index }}
+      </button>
+      {% endfor %}
+    </div>
   </div>
+  {% endif %}
 </header>

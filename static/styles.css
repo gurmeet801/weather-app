@@ -296,6 +296,45 @@ textarea {
   height: 18px;
 }
 
+.header {
+  width: 100%;
+}
+
+.station-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.station-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.station-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.station-btn {
+  min-width: 36px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  border-radius: 999px;
+}
+
+.station-btn.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(320px, 0.95fr) minmax(460px, 1.2fr);

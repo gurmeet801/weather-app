@@ -973,6 +973,7 @@ def fetch_forecast(
     preferred_city=None,
     preferred_state=None,
     preferred_location_key=None,
+    preferred_station_id=None,
     include_hourly=True,
     include_alerts=True,
 ):
@@ -999,6 +1000,9 @@ def fetch_forecast(
         preferred_key = preferred_location_key.strip() or None
     if not preferred_key:
         preferred_key = format_location_key(preferred_city, preferred_state)
+    station_preference = None
+    if isinstance(preferred_station_id, str):
+        station_preference = preferred_station_id.strip() or None
 
     points_url = f"https://api.weather.gov/points/{lat},{lon}"
 
@@ -1108,6 +1112,8 @@ def fetch_forecast(
     observation_wind_mph = None
     observation_station = None
     observation_timestamp = None
+    observation_station_id = None
+    observation_stations = []
     if stations_url:
         try:
             stations_data = cached_get_json(
@@ -1117,63 +1123,120 @@ def fetch_forecast(
                 cache_group="points_api",
             )
             station_features = stations_data.get("features", []) or []
+            station_lookup = {}
             station_ids = []
             for feature in station_features:
                 station_id = _station_id_from_feature(feature)
-                if station_id and station_id not in station_ids:
-                    station_ids.append(station_id)
-                if len(station_ids) >= 5:
-                    break
-
-            best_props = None
-            best_dt = None
-            best_timestamp = None
-            for station_id in station_ids:
-                try:
-                    observation_url = (
-                        f"https://api.weather.gov/stations/{station_id}/observations/latest"
-                    )
-                    observation_data = cached_get_json(
-                        observation_url,
-                        headers=WEATHER_GOV_HEADERS,
-                        ttl=60,
-                        cache_group=cache_group,
-                    )
-                    observation_props = observation_data.get("properties", {}) or {}
-                    observation_dt = parse_iso_datetime(observation_props.get("timestamp"))
-                    if not observation_dt:
-                        continue
-                    if observation_dt.tzinfo is None and time_zone:
-                        try:
-                            observation_dt = observation_dt.replace(tzinfo=ZoneInfo(time_zone))
-                        except Exception:
-                            pass
-                    try:
-                        timestamp_value = observation_dt.timestamp()
-                    except (OSError, ValueError, OverflowError):
-                        continue
-                    if best_timestamp is None or timestamp_value > best_timestamp:
-                        best_timestamp = timestamp_value
-                        best_dt = observation_dt
-                        best_props = observation_props
-                except requests.HTTPError:
+                if not station_id or station_id in station_lookup:
                     continue
-                except requests.RequestException:
-                    continue
+                props = feature.get("properties", {}) or {}
+                name = props.get("name") or props.get("stationName") or station_id
+                coords = (feature.get("geometry") or {}).get("coordinates") or []
+                distance = None
+                if len(coords) >= 2:
+                    station_lon, station_lat = coords[0], coords[1]
+                    if isinstance(station_lon, (int, float)) and isinstance(
+                        station_lat, (int, float)
+                    ):
+                        distance = _haversine_miles(lat, lon, station_lat, station_lon)
+                station_lookup[station_id] = {"name": name, "distance": distance}
+                station_ids.append(station_id)
+                if distance is not None and distance <= 20:
+                    observation_stations.append(
+                        {"id": station_id, "name": name, "distance_mi": round(distance, 1)}
+                    )
+            observation_stations.sort(key=lambda item: item["distance_mi"])
 
-            if best_props:
-                observation_label = _format_time_label(best_dt, time_zone)
-                observation_station = _station_label_from_observation(best_props)
-                observation_timestamp = best_props.get("timestamp")
+            def _load_observation_props(station_id):
+                observation_url = (
+                    f"https://api.weather.gov/stations/{station_id}/observations/latest"
+                )
+                observation_data = cached_get_json(
+                    observation_url,
+                    headers=WEATHER_GOV_HEADERS,
+                    ttl=60,
+                    cache_group=cache_group,
+                )
+                return observation_data.get("properties", {}) or {}
+
+            def _apply_observation(props, station_id):
+                nonlocal observation_label
+                nonlocal observation_station
+                nonlocal observation_station_id
+                nonlocal observation_timestamp
+                nonlocal observation_temp
+                nonlocal observation_unit
+                nonlocal observation_humidity
+                nonlocal observation_wind_mph
+
+                observation_dt = parse_iso_datetime(props.get("timestamp"))
+                if not observation_dt:
+                    return False
+                observation_label = _format_time_label(observation_dt, time_zone)
+                observation_station = _station_label_from_observation(props)
+                if not observation_station:
+                    observation_station = station_lookup.get(station_id, {}).get("name")
+                observation_station_id = station_id
+                observation_timestamp = props.get("timestamp")
                 observation_temp, observation_unit = _parse_observation_temperature(
-                    best_props.get("temperature")
+                    props.get("temperature")
                 )
                 observation_humidity = _parse_observation_humidity(
-                    best_props.get("relativeHumidity")
+                    props.get("relativeHumidity")
                 )
-                observation_wind_mph = _parse_observation_wind_mph(
-                    best_props.get("windSpeed")
-                )
+                observation_wind_mph = _parse_observation_wind_mph(props.get("windSpeed"))
+                return True
+
+            if station_preference:
+                station_id = station_preference
+                if station_id not in station_lookup and station_id.upper() in station_lookup:
+                    station_id = station_id.upper()
+                try:
+                    props = _load_observation_props(station_id)
+                    _apply_observation(props, station_id)
+                except requests.HTTPError:
+                    pass
+                except requests.RequestException:
+                    pass
+
+            if observation_label is None:
+                candidate_ids = [item["id"] for item in observation_stations]
+                if not candidate_ids:
+                    candidate_ids = station_ids
+                best_props = None
+                best_dt = None
+                best_station = None
+                best_timestamp = None
+                for station_id in candidate_ids[:5]:
+                    try:
+                        props = _load_observation_props(station_id)
+                        observation_dt = parse_iso_datetime(props.get("timestamp"))
+                        if not observation_dt:
+                            continue
+                        if observation_dt.tzinfo is None and time_zone:
+                            try:
+                                observation_dt = observation_dt.replace(
+                                    tzinfo=ZoneInfo(time_zone)
+                                )
+                            except Exception:
+                                pass
+                        try:
+                            timestamp_value = observation_dt.timestamp()
+                        except (OSError, ValueError, OverflowError):
+                            continue
+                        if best_timestamp is None or timestamp_value > best_timestamp:
+                            best_timestamp = timestamp_value
+                            best_dt = observation_dt
+                            best_props = props
+                            best_station = station_id
+                    except requests.HTTPError:
+                        continue
+                    except requests.RequestException:
+                        continue
+                if best_props and best_station:
+                    _apply_observation(best_props, best_station)
+                    if best_dt and observation_label is None:
+                        observation_label = _format_time_label(best_dt, time_zone)
         except requests.HTTPError:
             observation_label = None
         except requests.RequestException:
@@ -1324,5 +1387,7 @@ def fetch_forecast(
         "observation_label": observation_label,
         "observation_station": observation_station,
         "observation_timestamp": observation_timestamp,
+        "observation_station_id": observation_station_id,
+        "observation_stations": observation_stations,
         "period_label": period_label,
     }, None

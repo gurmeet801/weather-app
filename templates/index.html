@@ -56,6 +56,7 @@
     hasWeatherData: {{ 'true' if forecast or error else 'false' }},
     hasLocationParams: (urlParams.has('lat') && urlParams.has('lon')) || hasAddressParam,
     currentLocationKey: {{ current_location_key | tojson }},
+    observationStationId: {{ forecast.observation_station_id | tojson if forecast else "null" }},
     timeZone: {{ forecast.time_zone | tojson if forecast else "null" }},
     dailyDetails: {{ forecast.daily_details | tojson if forecast else "[]" }},
     deferExtras: {{ 'true' if defer_extras else 'false' }},
