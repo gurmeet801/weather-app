@@ -1,0 +1,10 @@
+2026-01-03 10:12:34 Ping start http://localhost:4200/warm
+2026-01-03 10:12:39 Ping ok (200)
+2026-01-03 10:27:34 Ping start http://localhost:4200/warm
+2026-01-03 10:27:39 Ping ok (200)
+2026-01-03 10:35:51 Ping start http://localhost:4200/warm
+2026-01-03 10:35:56 Ping failed: Unable to connect to the remote server
+2026-01-03 10:50:37 Ping start http://localhost:4200/warm
+2026-01-03 10:50:43 Ping ok (200)
+2026-01-03 11:05:37 Ping start http://localhost:4200/warm
+2026-01-03 11:05:43 Ping ok (200)

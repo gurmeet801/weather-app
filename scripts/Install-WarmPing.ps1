@@ -24,7 +24,9 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
+$ProjectRoot = [System.IO.Path]::GetFullPath($ProjectRoot)
 $PingScript = Join-Path $ProjectRoot "scripts\warm-ping.ps1"
+$PingScript = [System.IO.Path]::GetFullPath($PingScript)
 function Get-EnvValueFromFile {
     param(
         [string]$Path,
@@ -104,7 +106,6 @@ if ($existingTask) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
 
-$startTime = (Get-Date).AddMinutes(1)
 $envFile = Join-Path $ProjectRoot ".env"
 $port = if ($env:WEATHER_APP_PORT) { $env:WEATHER_APP_PORT } else { Get-EnvValueFromFile -Path $envFile -Name "WEATHER_APP_PORT" }
 if (-not $port) {
@@ -119,7 +120,7 @@ $action = New-ScheduledTaskAction `
 
 $repetitionIntervalIso = "PT{0}M" -f $IntervalMinutes
 $repetitionDurationIso = "P1D"
-$trigger = New-ScheduledTaskTrigger -Daily -At $startTime
+$trigger = New-ScheduledTaskTrigger -AtLogon -User $UserName
 $trigger.Repetition = New-CimInstance `
     -ClassName MSFT_TaskRepetitionPattern `
     -Namespace Root/Microsoft/Windows/TaskScheduler `
@@ -161,7 +162,7 @@ try {
     Write-Host "  Url:            $url" -ForegroundColor Gray
     Write-Host "  Interval:       $IntervalMinutes minutes" -ForegroundColor Gray
     Write-Host "  Script:         $PingScript" -ForegroundColor Gray
-    Write-Host "  Trigger:        Every $IntervalMinutes minutes" -ForegroundColor Gray
+    Write-Host "  Trigger:        At logon for user $UserName (every $IntervalMinutes minutes)" -ForegroundColor Gray
     Write-Host ""
 
     $startNow = Read-Host "Start the task now? (y/N)"
