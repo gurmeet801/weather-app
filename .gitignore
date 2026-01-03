@@ -5,3 +5,4 @@ weather_cache.json.tmp
 /artifacts/playwright
 /.playwright-mcp
 artifacts/warm-ping.log
+artifacts/warm-ping.log
