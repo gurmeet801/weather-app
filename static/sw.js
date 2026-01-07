@@ -4,7 +4,6 @@ const RUNTIME_CACHE = `weather-runtime-${SW_VERSION}`;
 const NAVIGATION_TIMEOUT_MS = 3000;
 
 const PRECACHE_URLS = [
-  '/',
   '/static/styles.css',
   '/static/js/weather.js',
   '/manifest.webmanifest',
@@ -15,7 +14,6 @@ const PRECACHE_URLS = [
 ];
 
 const VERSIONED_URLS = new Set([
-  '/',
   '/static/styles.css',
   '/static/js/weather.js',
   '/manifest.webmanifest',
@@ -70,8 +68,11 @@ function stashResponse(request, response) {
 function matchNavigationCache(request) {
   try {
     const requestUrl = new URL(request.url);
-    if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/' && !requestUrl.search) {
-      return caches.match(request, { ignoreSearch: true });
+    if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/') {
+      if (!requestUrl.search) {
+        return caches.match(request, { ignoreSearch: true });
+      }
+      return caches.match(request);
     }
   } catch (error) {
     // Fall back to default cache lookup.
@@ -79,10 +80,12 @@ function matchNavigationCache(request) {
   return caches.match(request);
 }
 
-function networkFirst(request, { timeoutMs = 0, cacheMatch } = {}) {
+function networkFirst(request, { timeoutMs = 0, cacheMatch, stash = true } = {}) {
   const cacheLookup = cacheMatch || ((req) => caches.match(req, { ignoreSearch: true }));
   const fetchPromise = fetch(request).then((response) => {
-    stashResponse(request, response);
+    if (stash) {
+      stashResponse(request, response);
+    }
     return response;
   });
 
@@ -147,6 +150,7 @@ self.addEventListener('fetch', (event) => {
       networkFirst(event.request, {
         timeoutMs: NAVIGATION_TIMEOUT_MS,
         cacheMatch: matchNavigationCache,
+        stash: false,
       })
     );
     return;

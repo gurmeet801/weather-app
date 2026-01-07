@@ -159,6 +159,7 @@ body {
   color: var(--text-primary);
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-size: 1rem;
   line-height: 1.6;
   transition: background-color 0.4s ease, color 0.4s ease;
@@ -180,6 +181,7 @@ textarea {
 .app-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -319,6 +321,19 @@ textarea {
   background: #d9ecff;
   color: #1b3a5d;
   border-color: #c6e1ff;
+}
+
+.btn.subtle {
+  background: var(--panel-soft);
+  color: var(--text-primary);
+  border-color: var(--border);
+  min-width: 0;
+  padding: 10px 14px;
+}
+
+.btn.subtle:hover {
+  background: #e9edf4;
+  border-color: #cdd6e4;
 }
 
 .actions .btn-icon {
@@ -2653,6 +2668,68 @@ textarea {
 /* Utility classes (Tailwind replacement) */
 .hidden {
   display: none !important;
+}
+
+.install-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 900px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.12);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+}
+
+.install-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.install-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.install-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.install-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .install-banner {
+    bottom: env(safe-area-inset-bottom);
+    padding: 12px;
+    margin: 0 10px;
+    border-radius: 16px;
+  }
+
+  .install-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .install-copy {
+    max-width: 70%;
+  }
 }
 
 .flex {
