@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Url,
-    [int]$TimeoutSeconds = 10,
-    [string]$LogPath
+    [int]$TimeoutSeconds = 10
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,23 +9,6 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 
-if (-not $LogPath) {
-    $logDir = Join-Path $repoRoot "artifacts"
-    if (-not (Test-Path $logDir)) {
-        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-    }
-    $LogPath = Join-Path $logDir "warm-ping.log"
-}
-
-function Write-Log {
-    param([string]$Message)
-    try {
-        $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-        Add-Content -Path $LogPath -Value "$timestamp $Message"
-    } catch {
-        # Best-effort logging only.
-    }
-}
 
 function Get-EnvValueFromFile {
     param(
@@ -75,7 +57,7 @@ if (-not $Url) {
     $Url = "http://localhost:$port/warm"
 }
 
-Write-Log "Ping start $Url"
+Write-Host "Ping start $Url"
 
 try {
     if ([Net.SecurityProtocolType]::Tls12) {
@@ -100,12 +82,9 @@ try {
     $response = Invoke-WebRequest @invokeParams
     if ($response.StatusCode) {
         Write-Host "Ping ok ($($response.StatusCode))"
-        Write-Log "Ping ok ($($response.StatusCode))"
     } else {
         Write-Host "Ping ok"
-        Write-Log "Ping ok"
     }
 } catch {
     Write-Host "Ping failed: $($_.Exception.Message)"
-    Write-Log "Ping failed: $($_.Exception.Message)"
 }
