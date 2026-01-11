@@ -14,6 +14,7 @@ const elements = {
   permissionError: document.getElementById('permission-error'),
   permissionSearchBtn: document.getElementById('search-location'),
   toggleLocationBtn: document.getElementById('toggle-location'),
+  locationAlertIndicator: document.getElementById('location-alert-indicator'),
   locationModal: document.getElementById('location-modal'),
   closeModalBtn: document.getElementById('close-modal'),
   modalBackdrop: document.getElementById('modal-backdrop'),
@@ -79,6 +80,7 @@ const CONFIG = {
     },
   },
   INSTALL_BANNER_DISMISS_KEY: 'install_banner_dismissed',
+  STALE_OBSERVATION_MAX_AGE_MS: 2 * 60 * 60 * 1000,
 };
 
 const ALERT_RADIUS_COOKIE = 'alert_radius_mi';
@@ -219,6 +221,22 @@ function getLocalFlag(key) {
 function setLocalFlag(key, value) {
   try {
     window.localStorage.setItem(key, value);
+  } catch (error) {
+    // Ignore storage failures
+  }
+}
+
+function getSessionFlag(key) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch (error) {
+    return null;
+  }
+}
+
+function setSessionFlag(key, value) {
+  try {
+    window.sessionStorage.setItem(key, value);
   } catch (error) {
     // Ignore storage failures
   }
@@ -1015,6 +1033,42 @@ function formatRelativeAge(value) {
   return `${days}d ago`;
 }
 
+function getObservationTimestampMs() {
+  const target = document.getElementById('datetime');
+  if (!target || !target.dataset) return null;
+  const raw = target.dataset.observationTimestamp;
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parsed = Date.parse(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function staleRefreshStorageKey(locationKey) {
+  const key = typeof locationKey === 'string' && locationKey.trim() ? locationKey.trim() : 'unknown';
+  return `stale_observation_refresh_${key}`;
+}
+
+function hasForcedStaleRefresh(locationKey) {
+  const key = staleRefreshStorageKey(locationKey);
+  return getSessionFlag(key) === '1';
+}
+
+function markStaleRefresh(locationKey) {
+  const key = staleRefreshStorageKey(locationKey);
+  setSessionFlag(key, '1');
+}
+
+function enforceFreshObservationData() {
+  const observationTimestamp = getObservationTimestampMs();
+  if (!Number.isFinite(observationTimestamp)) return;
+  const ageMs = Date.now() - observationTimestamp;
+  if (!Number.isFinite(ageMs) || ageMs < CONFIG.STALE_OBSERVATION_MAX_AGE_MS) return;
+  if (hasForcedStaleRefresh(currentLocationKey)) return;
+  markStaleRefresh(currentLocationKey);
+  refreshCurrentLocation({ showLoading: false });
+}
+
 function updateHeaderTimestamp({ observationLabel, observationStation, observationTimestamp } = {}) {
   const target = document.getElementById('datetime');
   if (!target || target.dataset?.datetimeMode !== 'forecast') return;
@@ -1118,6 +1172,11 @@ function updateActualTemp(value, unit) {
   updateTextTargets('[data-actual-temp]', text);
 }
 
+function updateLocationAlertIndicator(hasAlerts) {
+  if (!elements.locationAlertIndicator) return;
+  elements.locationAlertIndicator.classList.toggle('hidden', !hasAlerts);
+}
+
 function updateAdvisoryBadge(hasAdvisory) {
   if (!elements.advisoryBadge) return;
   elements.advisoryBadge.classList.toggle('hidden', !hasAdvisory);
@@ -1214,6 +1273,7 @@ function applyDeferredExtras(data) {
       observationStation: data.observation_station,
       observationTimestamp: data.observation_timestamp,
     });
+    enforceFreshObservationData();
   }
   if (typeof data.observation_station_id === 'string') {
     const trimmed = data.observation_station_id.trim();
@@ -1224,6 +1284,9 @@ function applyDeferredExtras(data) {
   updateHourlyContent(data.hourly_today, data.hourly_error);
   if (typeof data.alerts_html === 'string') {
     updateAlertsContent(data.alerts_html);
+  }
+  if (typeof data.alerts_active === 'boolean') {
+    updateLocationAlertIndicator(data.alerts_active);
   }
   updateHumidity(data.humidity);
   updatePrecip(data.precip_chance);
@@ -1388,6 +1451,7 @@ function initWeatherApp(options = {}) {
     currentLocationKey: initialLocationKey,
     observationStationId,
     timeZone,
+    hasActiveAlerts,
     deferExtras,
     coords,
   } = options;
@@ -1404,6 +1468,7 @@ function initWeatherApp(options = {}) {
     dailyDetailsMap = new Map(dailyDetails.map((day) => [day.key, day]));
   }
 
+  updateLocationAlertIndicator(Boolean(hasActiveAlerts));
   startDateTimeTicker();
   startAutoRefresh(hasWeatherData);
   initAlertAreaFilters();
@@ -1411,6 +1476,9 @@ function initWeatherApp(options = {}) {
     scheduleDeferredExtras(coords);
   }
   updateHeaderTimestamp();
+  if (hasWeatherData) {
+    enforceFreshObservationData();
+  }
 
   // Initial load logic
   if (!hasWeatherData && !hasLocationParams) {

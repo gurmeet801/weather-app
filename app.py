@@ -255,6 +255,7 @@ def forecast_extras():
         return {"error": error}, 400
 
     alerts = forecast.get("alerts") or []
+    has_active_alerts = bool(alerts)
     has_advisory = any(
         "advisory" in (alert.get("event") or "").lower() for alert in alerts
     )
@@ -272,6 +273,7 @@ def forecast_extras():
         "actual_temperature_unit": forecast.get("actual_temperature_unit"),
         "alerts_html": alerts_html,
         "alerts_has_advisory": has_advisory,
+        "alerts_active": has_active_alerts,
         "location_key": forecast.get("location_key"),
         "forecast_data_label": forecast.get("forecast_data_label"),
         "observation_label": forecast.get("observation_label"),

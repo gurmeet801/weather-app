@@ -300,6 +300,18 @@ textarea {
   height: 18px;
 }
 
+.location-alert-indicator {
+  color: #ef4444;
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-block;
+  margin-left: 4px;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+  position: relative;
+  top: -4px;
+}
+
 .actions .btn {
   min-width: 120px;
   padding: 8px 12px;
