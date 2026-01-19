@@ -284,6 +284,27 @@ def forecast_extras():
     }
 
 
+@app.route("/api/stations")
+def fetch_all_stations():
+    """Fetch all nearby station observations in parallel for fast PWA updates."""
+    from services.weather_service import fetch_stations_parallel
+
+    lat_value = _parse_float(request.args.get("lat"))
+    lon_value = _parse_float(request.args.get("lon"))
+    if lat_value is None or lon_value is None:
+        return {"error": "Missing coordinates."}, 400
+
+    location_key = request.args.get("location_key")
+    if isinstance(location_key, str):
+        location_key = location_key.strip() or None
+
+    result = fetch_stations_parallel(lat_value, lon_value, location_key=location_key)
+    if result is None:
+        return {"error": "Could not fetch station data."}, 502
+
+    return result
+
+
 @app.route("/warm")
 def warm_default_location():
     default_location, error = _resolve_default_location()

@@ -1,5 +1,6 @@
 import math
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -1393,3 +1394,147 @@ def fetch_forecast(
         "observation_stations": observation_stations,
         "period_label": period_label,
     }, None
+
+
+def fetch_stations_parallel(lat, lon, *, location_key=None, max_stations=5):
+    """
+    Fetch observations from all nearby stations in parallel for fast PWA updates.
+    Returns observation data for each station without blocking on sequential requests.
+    """
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except (TypeError, ValueError):
+        return None
+
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        return None
+
+    # Get station list from points API
+    points_url = f"https://api.weather.gov/points/{lat},{lon}"
+    try:
+        points_data = cached_get_json(
+            points_url,
+            headers=WEATHER_GOV_HEADERS,
+            ttl=5 * 60,
+            cache_group="points_api",
+        )
+    except requests.RequestException:
+        return None
+
+    points_props = points_data.get("properties", {})
+    stations_url = points_props.get("observationStations")
+    time_zone = points_props.get("timeZone")
+
+    if not stations_url:
+        return None
+
+    # Get list of nearby stations
+    try:
+        stations_data = cached_get_json(
+            stations_url,
+            headers=WEATHER_GOV_HEADERS,
+            ttl=6 * 60 * 60,
+            cache_group="points_api",
+        )
+    except requests.RequestException:
+        return None
+
+    station_features = stations_data.get("features", []) or []
+    station_list = []
+
+    for feature in station_features:
+        station_id = _station_id_from_feature(feature)
+        if not station_id:
+            continue
+        props = feature.get("properties", {}) or {}
+        name = props.get("name") or props.get("stationName") or station_id
+        coords = (feature.get("geometry") or {}).get("coordinates") or []
+        distance = None
+        if len(coords) >= 2:
+            station_lon, station_lat = coords[0], coords[1]
+            if isinstance(station_lon, (int, float)) and isinstance(station_lat, (int, float)):
+                distance = _haversine_miles(lat, lon, station_lat, station_lon)
+        if distance is not None and distance <= 30:
+            station_list.append({"id": station_id, "name": name, "distance_mi": round(distance, 1)})
+        if len(station_list) >= max_stations:
+            break
+
+    station_list.sort(key=lambda s: s["distance_mi"])
+    station_ids = [s["id"] for s in station_list[:max_stations]]
+
+    if not station_ids:
+        return {"stations": []}
+
+    cache_group = None
+    if location_key:
+        cache_group = location_group_key(location_key)
+
+    def fetch_single_station(station_id):
+        """Fetch observation for a single station."""
+        observation_url = f"https://api.weather.gov/stations/{station_id}/observations/latest"
+        try:
+            # Use very short TTL to get fresh data
+            observation_data = cached_get_json(
+                observation_url,
+                headers=WEATHER_GOV_HEADERS,
+                ttl=30,
+                cache_group=cache_group or "stations_parallel",
+            )
+            props = observation_data.get("properties", {}) or {}
+            observation_dt = parse_iso_datetime(props.get("timestamp"))
+            if not observation_dt:
+                return None
+
+            observation_label = _format_time_label(observation_dt, time_zone)
+            observation_station = _station_label_from_observation(props)
+            observation_temp, observation_unit = _parse_observation_temperature(props.get("temperature"))
+            observation_humidity = _parse_observation_humidity(props.get("relativeHumidity"))
+            observation_wind_mph = _parse_observation_wind_mph(props.get("windSpeed"))
+
+            # Calculate feels like temperature
+            feels_like = None
+            actual_temp = None
+            if observation_temp is not None and observation_unit:
+                actual_temp = int(round(_convert_temperature(observation_temp, observation_unit, "F")))
+                feels_like = _calculate_feels_like(
+                    observation_temp, observation_unit, observation_humidity, observation_wind_mph
+                )
+                if feels_like is not None:
+                    feels_like = int(round(_convert_temperature(feels_like, observation_unit, "F")))
+
+            humidity_percent = (
+                int(round(observation_humidity)) if observation_humidity is not None else None
+            )
+
+            return {
+                "id": station_id,
+                "observation_label": observation_label,
+                "observation_station": observation_station,
+                "observation_timestamp": props.get("timestamp"),
+                "feels_like_temperature": feels_like,
+                "feels_like_unit": "F",
+                "actual_temperature": actual_temp,
+                "actual_temperature_unit": "F",
+                "humidity": humidity_percent,
+            }
+        except requests.RequestException:
+            return None
+
+    # Fetch all stations in parallel
+    results = []
+    with ThreadPoolExecutor(max_workers=max_stations) as executor:
+        future_to_station = {executor.submit(fetch_single_station, sid): sid for sid in station_ids}
+        for future in as_completed(future_to_station):
+            result = future.result()
+            if result:
+                results.append(result)
+
+    # Sort by original order (closest first)
+    station_order = {sid: idx for idx, sid in enumerate(station_ids)}
+    results.sort(key=lambda r: station_order.get(r["id"], 999))
+
+    return {
+        "stations": results,
+        "time_zone": time_zone,
+    }

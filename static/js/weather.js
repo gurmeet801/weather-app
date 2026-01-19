@@ -81,6 +81,8 @@ const CONFIG = {
   },
   INSTALL_BANNER_DISMISS_KEY: 'install_banner_dismissed',
   STALE_OBSERVATION_MAX_AGE_MS: 2 * 60 * 60 * 1000,
+  PWA_RESUME_REFRESH_MIN_MS: 60 * 1000,
+  PWA_RESUME_REFRESH_KEY: 'pwa_last_refresh_timestamp',
 };
 
 const ALERT_RADIUS_COOKIE = 'alert_radius_mi';
@@ -97,6 +99,9 @@ let currentDayDetails = null;
 let currentDayUnit = '';
 let currentTimeZone = null;
 let deferredInstallEvent = null;
+let currentCoords = null;
+let allStationIds = [];
+let isPwaRefreshing = false;
 
 /**
  * Show a specific UI state and hide others
@@ -1332,6 +1337,121 @@ function scheduleDeferredExtras(coords) {
   }
 }
 
+/**
+ * Fetch all station observations in parallel for fast updates
+ */
+async function prefetchAllStations(coords) {
+  const latValue = Number(coords?.lat ?? coords?.latitude);
+  const lonValue = Number(coords?.lon ?? coords?.longitude);
+  if (!Number.isFinite(latValue) || !Number.isFinite(lonValue)) return null;
+
+  const params = new URLSearchParams({
+    lat: latValue.toFixed(4),
+    lon: lonValue.toFixed(4),
+  });
+  if (currentLocationKey) {
+    params.set('location_key', currentLocationKey);
+  }
+
+  try {
+    const response = await fetch(`/api/stations?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Apply fresh station data to the UI without a full reload
+ */
+function applyFreshStationData(data) {
+  if (!data || typeof data !== 'object') return;
+
+  // Update the selected station's observation data
+  const selectedStation = currentObservationStationId;
+  const stationData = data.stations?.find((s) => s.id === selectedStation) || data.stations?.[0];
+
+  if (stationData) {
+    if (typeof stationData.observation_label === 'string') {
+      updateHeaderTimestamp({
+        observationLabel: stationData.observation_label,
+        observationStation: stationData.observation_station,
+        observationTimestamp: stationData.observation_timestamp,
+      });
+    }
+    if (stationData.feels_like_temperature != null) {
+      updateFeelsLike(stationData.feels_like_temperature);
+    }
+    if (stationData.actual_temperature != null) {
+      updateActualTemp(stationData.actual_temperature, stationData.actual_temperature_unit);
+    }
+    if (stationData.humidity != null) {
+      updateHumidity(stationData.humidity);
+    }
+  }
+
+  // Update extras if provided
+  if (data.extras) {
+    applyDeferredExtras(data.extras);
+  }
+}
+
+/**
+ * Handle PWA resume - refresh data when app becomes visible
+ */
+async function handlePwaResume() {
+  if (isPwaRefreshing) return;
+  if (!isStandalone()) return;
+  if (!currentCoords) return;
+
+  // Check if enough time has passed since last refresh
+  const lastRefresh = Number(getSessionFlag(CONFIG.PWA_RESUME_REFRESH_KEY)) || 0;
+  const now = Date.now();
+  if (now - lastRefresh < CONFIG.PWA_RESUME_REFRESH_MIN_MS) return;
+
+  isPwaRefreshing = true;
+  setSessionFlag(CONFIG.PWA_RESUME_REFRESH_KEY, String(now));
+
+  try {
+    // Fetch all stations in parallel for speed
+    const stationData = await prefetchAllStations(currentCoords);
+    if (stationData) {
+      applyFreshStationData(stationData);
+    }
+
+    // Also refresh deferred extras
+    await loadDeferredExtras(currentCoords);
+  } catch (error) {
+    // Ignore refresh errors
+  } finally {
+    isPwaRefreshing = false;
+  }
+}
+
+/**
+ * Initialize PWA visibility change listener
+ */
+function initPwaResumeRefresh() {
+  if (typeof document.hidden === 'undefined') return;
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      handlePwaResume();
+    }
+  });
+
+  // Also handle pageshow for bfcache restoration
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      handlePwaResume();
+    }
+  });
+}
+
 function handleTempChartMove(event) {
   if (!currentDayDetails || !elements.dayDetailTempChart) return;
   const hours = currentDayDetails.hours || [];
@@ -1450,6 +1570,7 @@ function initWeatherApp(options = {}) {
     dailyDetails,
     currentLocationKey: initialLocationKey,
     observationStationId,
+    observationStations,
     timeZone,
     hasActiveAlerts,
     deferExtras,
@@ -1457,6 +1578,10 @@ function initWeatherApp(options = {}) {
   } = options;
   currentLocationKey = initialLocationKey || null;
   currentObservationStationId = observationStationId || null;
+  currentCoords = coords || null;
+  allStationIds = Array.isArray(observationStations)
+    ? observationStations.map((s) => s.id).filter(Boolean)
+    : [];
   updateStationButtons(currentObservationStationId);
   if (typeof timeZone === 'string') {
     const trimmed = timeZone.trim();
@@ -1478,6 +1603,9 @@ function initWeatherApp(options = {}) {
   updateHeaderTimestamp();
   if (hasWeatherData) {
     enforceFreshObservationData();
+    initPwaResumeRefresh();
+    // Mark this load time for PWA resume throttling
+    setSessionFlag(CONFIG.PWA_RESUME_REFRESH_KEY, String(Date.now()));
   }
 
   // Initial load logic

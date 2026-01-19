@@ -1,7 +1,8 @@
 const SW_VERSION = new URL(self.location.href).searchParams.get('v') || 'v1';
 const CACHE_NAME = `weather-shell-${SW_VERSION}`;
 const RUNTIME_CACHE = `weather-runtime-${SW_VERSION}`;
-const NAVIGATION_TIMEOUT_MS = 3000;
+const NAVIGATION_TIMEOUT_MS = 1500;
+const API_STATIONS_TTL_MS = 0;
 
 const PRECACHE_URLS = [
   '/static/styles.css',
@@ -157,6 +158,20 @@ self.addEventListener('fetch', (event) => {
   }
 
   const requestUrl = new URL(event.request.url);
+
+  // Always fetch fresh data for /api/stations (used for PWA resume refresh)
+  if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/api/stations') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Use network-first for /api/extras to get fresh data quickly
+  if (requestUrl.origin === self.location.origin && requestUrl.pathname === '/api/extras') {
+    event.respondWith(
+      networkFirst(event.request, { timeoutMs: 2000, stash: true })
+    );
+    return;
+  }
 
   if (requestUrl.origin === self.location.origin) {
     event.respondWith(staleWhileRevalidate(event.request));
