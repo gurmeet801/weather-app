@@ -29,23 +29,16 @@
           {% endif %}
         </div>
       </div>
-      {% if alert.start and alert.ends and alert.start_iso and alert.end_iso %}
+      {% if alert.start and alert.ends %}
       <div class="alert-modern__valid">
-        <div class="alert-validity" aria-label="Alert valid time">
-          <div class="alert-validity__labels">
-            <span>Start</span>
-            <span>End</span>
+        <div class="alert-validity-simple">
+          <div class="alert-validity-simple__row">
+            <span class="alert-validity-simple__label">Start</span>
+            <span class="alert-validity-simple__time">{{ alert.start }}</span>
           </div>
-          <div
-            class="alert-validity__bar"
-            data-alert-start="{{ alert.start_iso | e }}"
-            data-alert-end="{{ alert.end_iso | e }}"
-          >
-            <span class="alert-validity__marker" aria-hidden="true"></span>
-          </div>
-          <div class="alert-validity__times">
-            <span>{{ alert.start }}</span>
-            <span>{{ alert.ends }}</span>
+          <div class="alert-validity-simple__row">
+            <span class="alert-validity-simple__label">End</span>
+            <span class="alert-validity-simple__time">{{ alert.ends }}</span>
           </div>
         </div>
       </div>

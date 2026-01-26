@@ -11,8 +11,10 @@
     <div class="hourly-list">
       {% for hour in forecast.hourly_today %}
       <div class="hour-row">
-        <div class="hour-time">{{ hour.time }}</div>
-        <div class="hour-temp">{{ hour.temperature }}&deg;</div>
+        <div class="hour-time-temp">
+          <div class="hour-time">{{ hour.time }}</div>
+          <div class="hour-temp">{{ hour.temperature }}&deg;</div>
+        </div>
         {% if hour.shortForecast %}
         <div class="hour-summary">{{ hour.shortForecast }}</div>
         {% endif %}

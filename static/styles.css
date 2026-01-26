@@ -353,6 +353,41 @@ textarea {
   height: 16px;
 }
 
+#refresh-weather,
+#toggle-location {
+  background: none;
+  border: none;
+  padding: 0;
+  min-width: 0;
+  box-shadow: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+#refresh-weather:hover,
+#toggle-location:hover {
+  background: none;
+  border: none;
+  transform: none;
+  opacity: 0.7;
+}
+
+#refresh-weather svg,
+#toggle-location svg {
+  width: 24px;
+  height: 24px;
+}
+
+h1 #toggle-location,
+h1 #refresh-weather {
+  position: relative;
+  top: -2px;
+}
+
 .header {
   width: 100%;
   display: flex;
@@ -556,19 +591,16 @@ textarea {
 
 .stats-grid {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 16px;
 }
 
 .stat {
-  flex: 1;
-  min-width: 0;
-  background: var(--panel-soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
 }
 
 .stat-value {
@@ -579,7 +611,7 @@ textarea {
 .stat-label {
   font-size: 0.85rem;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-left: 8px;
 }
 
 .summary-card {
@@ -623,14 +655,20 @@ textarea {
 .hour-row {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   min-width: 100px;
   flex-shrink: 0;
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--panel-soft);
   border: 1px solid var(--border);
-  text-align: center;
+}
+
+.hour-time-temp {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .hour-time {
@@ -653,6 +691,7 @@ textarea {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin-top: 6px;
+  text-align: left;
 }
 
 .hourly-card {
@@ -889,11 +928,11 @@ textarea {
   }
 
   .stats-grid {
-    gap: 8px;
+    gap: 6px;
   }
 
   .stat {
-    padding: 8px;
+    padding: 0;
   }
 
   .stat-value {
@@ -1794,6 +1833,31 @@ textarea {
   background: var(--alert-valid-dark);
   transform: translate(-50%, -50%);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.alert-validity-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-validity-simple__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.alert-validity-simple__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 50px;
+}
+
+.alert-validity-simple__time {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .alert-areas {

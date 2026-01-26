@@ -35,22 +35,13 @@
   </div>
   <div class="stats-grid">
     <div class="stat">
-      <div class="stat-value">
-        {{ forecast.period.windSpeed }}{% if forecast.period.windDirection %} {{ forecast.period.windDirection }}{% endif %}
-      </div>
-      <div class="stat-label">Wind</div>
+      <span class="stat-value">{{ forecast.period.windSpeed }}{% if forecast.period.windDirection %} {{ forecast.period.windDirection }}{% endif %}</span> <span class="stat-label">Wind</span>
     </div>
     <div class="stat">
-      <div class="stat-value" data-humidity-stat>
-        {% if forecast.humidity is not none %}{{ forecast.humidity }}%{% else %}--{% endif %}
-      </div>
-      <div class="stat-label">Humidity</div>
+      <span class="stat-value" data-humidity-stat>{% if forecast.humidity is not none %}{{ forecast.humidity }}%{% else %}--{% endif %}</span> <span class="stat-label">Humidity</span>
     </div>
     <div class="stat">
-      <div class="stat-value" data-precip-stat>
-        {% if forecast.precip_chance is not none %}{{ forecast.precip_chance }}%{% else %}--{% endif %}
-      </div>
-      <div class="stat-label">Precip</div>
+      <span class="stat-value" data-precip-stat>{% if forecast.precip_chance is not none %}{{ forecast.precip_chance }}%{% else %}--{% endif %}</span> <span class="stat-label">Precip</span>
     </div>
   </div>
 </section>

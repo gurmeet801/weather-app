@@ -19,8 +19,7 @@
       aria-controls="day-detail-modal"
     >
       <div>
-        <div class="forecast-day">{{ day.name }}</div>
-        <div class="forecast-date">{{ day.date_label }}</div>
+        <div class="forecast-day">{{ day.date_label }}{% if day.name == "Today" %} (today){% endif %}</div>
       </div>
       <div class="forecast-condition">
         <svg class="forecast-icon" viewBox="0 0 24 24" fill="currentColor">
