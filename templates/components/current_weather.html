@@ -15,16 +15,19 @@
 <section class="card now-card" style="--delay: 0.05s;">
   <div class="now-content">
     <div class="now-primary">
-      <div class="now-icon-wrapper">
-        {{ get_weather_icon(forecast.period.shortForecast, forecast.period.isDaytime) }}
-      </div>
       <div class="now-temp-group">
-        <div class="now-temp" data-feels-like-temp>{{ feels_value }}&deg;</div>
-        <div class="now-condition">{{ forecast.period.shortForecast }}</div>
+        <div class="now-temp">
+          <span data-feels-like-temp>{{ feels_value }}&deg;</span> <span data-actual-temp>{{ actual_value }}&deg;</span><span class="temp-unit">A</span>
+        </div>
+        <div class="now-condition-row">
+          <div class="now-icon-wrapper">
+            {{ get_weather_icon(forecast.period.shortForecast, forecast.period.isDaytime) }}
+          </div>
+          <div class="now-condition">{{ forecast.period.shortForecast }}</div>
+        </div>
       </div>
     </div>
     <div class="now-secondary">
-      <div class="now-sub" data-actual-temp>Actual {{ actual_value }}&deg;{{ unit }}</div>
       <div
         id="advisory-badge"
         class="now-advisory advisory-blink{% if not advisory.found %} hidden{% endif %}"

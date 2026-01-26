@@ -61,12 +61,12 @@
       {% if not alert.what and not alert.impacts and alert.description %}
       <div class="alert-modern__section alert-modern__section--full">
         <div class="alert-modern__section-label">What</div>
-        <p class="alert-modern__section-text">{{ alert.description }}</p>
+        <p class="alert-modern__section-text">{{ alert.description | replace('* ADDITIONAL DETAILS...', '') | replace('* Additional Details...', '') }}</p>
       </div>
       {% elif alert.description %}
       <div class="alert-modern__section alert-modern__section--full">
         <div class="alert-modern__section-label">Details</div>
-        <p class="alert-modern__section-text">{{ alert.description }}</p>
+        <p class="alert-modern__section-text">{{ alert.description | replace('* ADDITIONAL DETAILS...', '') | replace('* Additional Details...', '') }}</p>
       </div>
       {% endif %}
     </div>

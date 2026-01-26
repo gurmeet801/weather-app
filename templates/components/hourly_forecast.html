@@ -2,8 +2,7 @@
 {# Variables: forecast (required) #}
 <section class="card hourly-card" style="--delay: 0.15s;">
   <div class="card-title hourly-title">
-    <span>Next 24 Hours</span>
-    <span class="hourly-clock-label">Current time:</span>
+    <span>Next 24</span>
     <span id="hourly-current-time" class="hourly-clock"></span>
   </div>
   <div id="hourly-content">
@@ -12,8 +11,8 @@
       {% for hour in forecast.hourly_today %}
       <div class="hour-row">
         <div class="hour-time-temp">
-          <div class="hour-time">{{ hour.time }}</div>
-          <div class="hour-temp">{{ hour.temperature }}&deg;</div>
+          <span class="hour-time">{{ hour.time }}</span>
+          <span class="hour-temp">{{ hour.temperature }}&deg;</span>
         </div>
         {% if hour.shortForecast %}
         <div class="hour-summary">{{ hour.shortForecast }}</div>

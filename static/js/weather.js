@@ -1172,8 +1172,7 @@ function updateFeelsLike(value) {
 
 function updateActualTemp(value, unit) {
   const normalized = normalizeNumber(value);
-  const unitLabel = unit ? `${unit}` : '';
-  const text = normalized == null ? 'Actual --' : `Actual ${normalized}\u00b0${unitLabel}`;
+  const text = normalized == null ? '--' : `${normalized}\u00b0`;
   updateTextTargets('[data-actual-temp]', text);
 }
 
@@ -1210,18 +1209,22 @@ function updateHourlyContent(hourlyToday, hourlyError) {
       const row = document.createElement('div');
       row.className = 'hour-row';
 
-      const time = document.createElement('div');
+      const timeTemp = document.createElement('div');
+      timeTemp.className = 'hour-time-temp';
+
+      const time = document.createElement('span');
       time.className = 'hour-time';
       time.textContent = hour?.time || '';
 
-      const temp = document.createElement('div');
+      const temp = document.createElement('span');
       temp.className = 'hour-temp';
       temp.textContent = Number.isFinite(hour?.temperature)
         ? `${hour.temperature}\u00b0`
         : '--';
 
-      row.appendChild(time);
-      row.appendChild(temp);
+      timeTemp.appendChild(time);
+      timeTemp.appendChild(temp);
+      row.appendChild(timeTemp);
 
       if (hour?.shortForecast) {
         const summary = document.createElement('div');
