@@ -569,6 +569,10 @@ h1 #refresh-weather {
   color: var(--alert-moderate-accent);
 }
 
+.now-advisory .stat-value {
+  font-size: 0.55rem;
+}
+
 .advisory-blink {
   animation: advisoryBlink 1.2s ease-in-out infinite;
 }
