@@ -197,8 +197,8 @@ textarea {
   padding-top: clamp(2px, 0.3vw, 3px);
   position: relative;
   z-index: 1;
-  padding-left: max(clamp(16px, 3vw, 24px), env(safe-area-inset-left));
-  padding-right: max(clamp(16px, 3vw, 24px), env(safe-area-inset-right));
+  padding-left: max(3px, env(safe-area-inset-left));
+  padding-right: max(3px, env(safe-area-inset-right));
   width: 100%;
   min-width: 0;
 }
@@ -301,7 +301,7 @@ textarea {
 }
 
 .datetime {
-  font-size: 1rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.35;
@@ -450,6 +450,10 @@ h1 #refresh-weather {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.header-card {
+  margin-bottom: 16px;
 }
 
 .station-picker {
@@ -1345,6 +1349,20 @@ h1 #refresh-weather {
     font-size: 0.95rem;
   }
 
+  .daily-temps-min,
+  .daily-temps-max {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .daily-temps-min .temp-feels,
+  .daily-temps-min .temp-actual,
+  .daily-temps-max .temp-feels,
+  .daily-temps-max .temp-actual {
+    text-align: center;
+  }
+
   .section-header {
     font-size: calc(0.7rem / 1.5);
   }
@@ -1543,8 +1561,8 @@ h1 #refresh-weather {
 
   .app {
     padding: 12px;
-    padding-left: max(8px, env(safe-area-inset-left));
-    padding-right: max(8px, env(safe-area-inset-right));
+    padding-left: max(3px, env(safe-area-inset-left));
+    padding-right: max(3px, env(safe-area-inset-right));
   }
 
   .now-temp {
