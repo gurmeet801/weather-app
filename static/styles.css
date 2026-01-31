@@ -261,6 +261,11 @@ textarea {
   text-overflow: clip;
 }
 
+.location-proximity {
+  display: inline;
+  margin-left: 0.3ch;
+}
+
 .location-actions-inline {
   display: inline-flex;
   align-items: center;
@@ -349,13 +354,12 @@ textarea {
 .location-alert-indicator {
   color: #ef4444;
   font-weight: 900;
-  font-size: 1em;
+  font-size: 0.5em;
   line-height: 1;
-  display: inline-block;
-  margin-left: 1ch;
+  display: inline;
+  margin-left: 0;
   text-shadow: 0 0 10px rgba(239, 68, 68, 0.55);
-  position: relative;
-  top: 0;
+  vertical-align: super;
 }
 
 .location-alert-indicator.is-inactive {
