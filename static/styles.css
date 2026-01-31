@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&display=swap');
 
 :root {
   --bg-1: #f1efe9;
@@ -15,8 +15,8 @@
   --border: #d7d1c6;
   --shadow: 0 12px 26px rgba(30, 39, 50, 0.12);
   --shadow-soft: 0 8px 18px rgba(30, 39, 50, 0.08);
-  --font-family-base: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
-  --font-family-display: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  --font-family-base: 'Source Code Pro', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  --font-family-display: 'Source Code Pro', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
   --font-size-desktop: 30px;
   --font-size-tablet: 30px;
   --font-size-mobile: 30px;
