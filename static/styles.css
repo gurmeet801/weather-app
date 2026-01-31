@@ -17,9 +17,9 @@
   --shadow-soft: 0 8px 18px rgba(30, 39, 50, 0.08);
   --font-family-base: 'Inter Mono';
   --font-family-display: 'Inter Mono';
-  --font-size-desktop: 30px;
-  --font-size-tablet: 30px;
-  --font-size-mobile: 20px;
+  --font-size-desktop: 45px;
+  --font-size-tablet: 45px;
+  --font-size-mobile: 30px;
   --base-font-size: var(--font-size-desktop);
   --alert-minor-bg: #e8f5e9;
   --alert-minor-border: #4caf50;
@@ -248,7 +248,7 @@ textarea {
 
 .location h1 {
   font-family: var(--font-family-display);
-  font-size: clamp(1.8rem, 4vw, 2.3rem);
+  font-size: calc(clamp(1.8rem, 4vw, 2.3rem) / 1.5);
   font-weight: 700;
   line-height: 1.1;
   margin: 14px 0 2px;
@@ -525,7 +525,7 @@ h1 #refresh-weather {
 }
 
 .card-title {
-  font-size: 0.82rem;
+  font-size: calc(0.82rem / 1.5);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -713,7 +713,7 @@ h1 #refresh-weather {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 24px;
   margin-top: 16px;
   align-items: baseline;
@@ -728,17 +728,24 @@ h1 #refresh-weather {
   border: none;
   padding: 0;
   text-align: left;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .stat-value {
   font-size: 1.1rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .stat-label {
   font-size: 0.85rem;
   color: var(--text-muted);
-  margin-left: 8px;
+  margin-left: 0;
+  white-space: nowrap;
 }
 
 /* Summary Banner */
@@ -849,7 +856,7 @@ h1 #refresh-weather {
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  font-size: 0.75rem;
+  font-size: calc(0.75rem / 1.5);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -1227,7 +1234,7 @@ h1 #refresh-weather {
   }
 
   .location h1 {
-    font-size: 1.6rem;
+    font-size: calc(1.6rem / 1.5);
   }
 
   .location-proximity {
@@ -1295,7 +1302,7 @@ h1 #refresh-weather {
   }
 
   .section-header {
-    font-size: 0.7rem;
+    font-size: calc(0.7rem / 1.5);
   }
 }
 
@@ -1348,7 +1355,7 @@ h1 #refresh-weather {
   }
 
   .card-title {
-    font-size: 0.72rem;
+    font-size: calc(0.72rem / 1.5);
     letter-spacing: 0.1em;
     margin-bottom: 10px;
   }
@@ -2140,7 +2147,7 @@ h1 #refresh-weather {
 }
 
 .alert-modern__title {
-  font-size: 1.4rem;
+  font-size: calc(1.4rem / 1.5);
   font-weight: 700;
   margin: 0;
   color: var(--alert-text);
@@ -2578,7 +2585,7 @@ h1 #refresh-weather {
   }
 
   .alert-modern__title {
-    font-size: 1.2rem;
+    font-size: calc(1.2rem / 1.5);
   }
 
   .alert-modern__issuer {
@@ -3342,14 +3349,14 @@ h1 #refresh-weather {
 
 .install-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: calc(1rem / 1.5);
   color: var(--text-primary);
 }
 
 .install-subtitle {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: calc(0.92rem / 1.5);
 }
 
 .install-actions {
@@ -4091,9 +4098,9 @@ h1 #refresh-weather {
     align-items: flex-start;
   }
 
-  .sm\:justify-between {
-    justify-content: space-between;
-  }
+.sm\:justify-between {
+  justify-content: space-between;
+}
 
   .sm\:flex-row {
     flex-direction: row;
@@ -4149,6 +4156,39 @@ h1 #refresh-weather {
 
   .sm\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Keep heading titles at pre-scale sizes */
+h2.text-base,
+h3.text-base {
+  font-size: calc(1rem / 1.5);
+}
+
+h2.text-lg,
+h3.text-lg {
+  font-size: calc(1.125rem / 1.5);
+}
+
+h2.text-xl,
+h3.text-xl {
+  font-size: calc(1.25rem / 1.5);
+}
+
+@media (min-width: 640px) {
+  h2.sm\:text-base,
+  h3.sm\:text-base {
+    font-size: calc(1rem / 1.5);
+  }
+
+  h2.sm\:text-lg,
+  h3.sm\:text-lg {
+    font-size: calc(1.125rem / 1.5);
+  }
+
+  h2.sm\:text-xl,
+  h3.sm\:text-xl {
+    font-size: calc(1.25rem / 1.5);
   }
 }
 
