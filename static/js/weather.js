@@ -52,11 +52,6 @@ const elements = {
   hourlyContent: document.getElementById('hourly-content'),
   alertsContainer: document.getElementById('alerts-container'),
   advisoryBadge: document.getElementById('advisory-badge'),
-  installBanner: document.getElementById('install-banner'),
-  installCta: document.getElementById('install-cta'),
-  installDismiss: document.getElementById('install-dismiss'),
-  installTitle: document.getElementById('install-title'),
-  installSubtitle: document.getElementById('install-subtitle'),
 };
 
 // Configuration
@@ -79,7 +74,6 @@ const CONFIG = {
       maximumAge: 0,
     },
   },
-  INSTALL_BANNER_DISMISS_KEY: 'install_banner_dismissed',
   STALE_OBSERVATION_MAX_AGE_MS: 2 * 60 * 60 * 1000,
   PWA_RESUME_REFRESH_MIN_MS: 60 * 1000,
   PWA_RESUME_REFRESH_KEY: 'pwa_last_refresh_timestamp',
@@ -141,7 +135,6 @@ let dailyDetailsMap = new Map();
 let currentDayDetails = null;
 let currentDayUnit = '';
 let currentTimeZone = null;
-let deferredInstallEvent = null;
 let currentCoords = null;
 let allStationIds = [];
 let isPwaRefreshing = false;
@@ -294,74 +287,6 @@ function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
-function showInstallBanner() {
-  elements.installBanner?.classList.remove('hidden');
-}
-
-function hideInstallBanner() {
-  elements.installBanner?.classList.add('hidden');
-}
-
-function initInstallPrompts() {
-  const bannerDismissed = getLocalFlag(CONFIG.INSTALL_BANNER_DISMISS_KEY);
-  if (!elements.installBanner || bannerDismissed) return;
-
-  const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
-  const alreadyInstalled = isStandalone();
-
-  function dismissBanner() {
-    hideInstallBanner();
-    setLocalFlag(CONFIG.INSTALL_BANNER_DISMISS_KEY, '1');
-    deferredInstallEvent = null;
-  }
-
-  elements.installDismiss?.addEventListener('click', dismissBanner);
-
-  window.addEventListener('appinstalled', () => {
-    setLocalFlag(CONFIG.INSTALL_BANNER_DISMISS_KEY, '1');
-    hideInstallBanner();
-    deferredInstallEvent = null;
-  });
-
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    deferredInstallEvent = event;
-    if (elements.installTitle) elements.installTitle.textContent = 'Install Weather';
-    if (elements.installSubtitle) elements.installSubtitle.textContent = 'Add Weather to your home screen for quick access.';
-    if (elements.installCta) elements.installCta.textContent = 'Install';
-    showInstallBanner();
-  });
-
-  elements.installCta?.addEventListener('click', async () => {
-    if (deferredInstallEvent) {
-      deferredInstallEvent.prompt();
-      try {
-        const choice = await deferredInstallEvent.userChoice;
-        if (choice && choice.outcome === 'accepted') {
-          setLocalFlag(CONFIG.INSTALL_BANNER_DISMISS_KEY, '1');
-          hideInstallBanner();
-        }
-      } catch (error) {
-        // Ignore install errors
-      } finally {
-        deferredInstallEvent = null;
-      }
-    } else if (isIOS && !alreadyInstalled) {
-      // iOS cannot trigger install; keep banner visible as instructions.
-      if (elements.installSubtitle) {
-        elements.installSubtitle.textContent = 'Tap the Share icon, then choose “Add to Home Screen”.';
-      }
-    }
-  });
-
-  // iOS never fires beforeinstallprompt, so show guidance if not installed.
-  if (isIOS && !alreadyInstalled) {
-    if (elements.installTitle) elements.installTitle.textContent = 'Add to Home Screen';
-    if (elements.installSubtitle) elements.installSubtitle.textContent = 'Tap the Share icon, then choose “Add to Home Screen”.';
-    if (elements.installCta) elements.installCta.textContent = 'How to';
-    showInstallBanner();
-  }
-}
 
 /**
  * Get cached location from cookies
@@ -1775,7 +1700,6 @@ function initWeatherApp(options = {}) {
     hideChartTooltip(elements.dayDetailPrecipTooltip, elements.dayDetailPrecipMarker);
   });
 
-  initInstallPrompts();
 }
 
 /**

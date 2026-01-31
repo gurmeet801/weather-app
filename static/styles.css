@@ -272,8 +272,8 @@ textarea {
 .location-actions-inline {
   display: inline-flex;
   align-items: center;
-  margin-left: 0;
-  gap: 0.6ch;
+  margin-left: 18px;
+  gap: 32px;
   font-size: 1em;
   white-space: nowrap;
   vertical-align: baseline;
@@ -296,8 +296,8 @@ textarea {
 }
 
 .location-actions-inline .btn-icon {
-  width: 1.6em;
-  height: 1.6em;
+  width: 2.4em;
+  height: 2.4em;
 }
 
 .datetime {
@@ -421,7 +421,7 @@ textarea {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   vertical-align: middle;
 }
 
@@ -435,8 +435,8 @@ textarea {
 
 #refresh-weather svg,
 #toggle-location svg {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
 }
 
 h1 #toggle-location,
@@ -1377,7 +1377,7 @@ h1 #refresh-weather {
   .location-actions-inline {
     display: flex;
     margin-top: 8px;
-    gap: 8px;
+    gap: 20px;
   }
 
   .location-actions-inline .btn {
@@ -1388,8 +1388,8 @@ h1 #refresh-weather {
   }
 
   .location-actions-inline .btn-icon {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
   }
 
   .actions {
