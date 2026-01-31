@@ -350,4 +350,4 @@ def format_display_datetime(dt):
     hour = dt.strftime("%I").lstrip("0")
     minute = dt.strftime("%M")
     ampm = dt.strftime("%p").lower()
-    return f"{dt.strftime('%a')}, {dt.strftime('%m/%d')}, {hour}:{minute}{ampm}"
+    return f"{dt.strftime('%a')} {dt.strftime('%m/%d')} {hour}:{minute}{ampm}"

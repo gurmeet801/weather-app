@@ -30,12 +30,6 @@
     <div class="now-secondary"></div>
   </div>
   <div class="stats-grid">
-    <div
-      id="advisory-badge"
-      class="stat now-advisory advisory-blink{% if not advisory.found %} hidden{% endif %}"
-    >
-      <span class="stat-value">See advisory below</span>
-    </div>
     <div class="stat">
       <span class="stat-value">{{ forecast.period.windSpeed }}{% if forecast.period.windDirection %} {{ forecast.period.windDirection }}{% endif %}</span> <span class="stat-label">Wind</span>
     </div>

@@ -874,7 +874,7 @@ def build_daily_forecast(periods, limit=7):
             grouped[day_key] = {
                 "date": dt,
                 "key": day_key,
-                "date_label": dt.strftime("%a, %b %d"),
+                "date_label": dt.strftime("%a %b %d"),
                 "date_short": dt.strftime("%m/%d"),
                 "dow_short": dt.strftime("%a"),
                 "name": dt.strftime("%a"),
@@ -1008,7 +1008,7 @@ def build_daily_details(periods, limit=7):
         if day_key not in grouped:
             grouped[day_key] = {
                 "key": day_key,
-                "date_label": dt.strftime("%a, %b %d"),
+                "date_label": dt.strftime("%a %b %d"),
                 "hours": [],
             }
             order.append(day_key)
