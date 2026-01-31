@@ -1207,8 +1207,7 @@ function updateHourlyContent(hourlyToday, hourlyError) {
     const grid = document.createElement('div');
     grid.className = 'hourly-grid';
     
-    // Only show first 7 hours
-    hourlyToday.slice(0, 7).forEach((hour) => {
+    hourlyToday.forEach((hour) => {
       const item = document.createElement('div');
       item.className = 'hourly-item';
 
