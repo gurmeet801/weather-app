@@ -19,7 +19,7 @@
   --font-family-display: 'Source Code Pro', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
   --font-size-desktop: 30px;
   --font-size-tablet: 30px;
-  --font-size-mobile: 30px;
+  --font-size-mobile: 20px;
   --base-font-size: var(--font-size-desktop);
   --alert-minor-bg: #e8f5e9;
   --alert-minor-border: #4caf50;
@@ -1524,6 +1524,16 @@ h1 #refresh-weather {
   .forecast-high,
   .forecast-low {
     font-size: 1.15rem;
+  }
+
+  .daily-row {
+    grid-template-columns: minmax(96px, 1.5fr) 28px 1fr 1fr;
+    column-gap: 8px;
+  }
+
+  .daily-day-name {
+    text-align: left;
+    justify-self: start;
   }
 }
 
