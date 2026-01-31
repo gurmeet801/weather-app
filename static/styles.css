@@ -164,6 +164,7 @@ body {
   line-height: 1.6;
   transition: background-color 0.4s ease, color 0.4s ease;
   padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
 }
 
 h1,
@@ -195,6 +196,8 @@ textarea {
   z-index: 1;
   padding-left: max(clamp(16px, 3vw, 24px), env(safe-area-inset-left));
   padding-right: max(clamp(16px, 3vw, 24px), env(safe-area-inset-right));
+  width: 100%;
+  min-width: 0;
 }
 
 .text-white {
@@ -247,6 +250,46 @@ textarea {
   line-height: 1.1;
   margin: 14px 0 2px;
   overflow-wrap: anywhere;
+  display: block;
+  white-space: normal;
+}
+
+.location-name {
+  display: inline;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.location-actions-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0;
+  gap: 0.6ch;
+  font-size: 1em;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.location-actions-inline .btn {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: 1em;
+}
+
+.location-actions-inline .btn:hover {
+  background: none;
+  border: none;
+  transform: none;
+  opacity: 0.7;
+}
+
+.location-actions-inline .btn-icon {
+  width: 1.6em;
+  height: 1.6em;
 }
 
 .datetime {
@@ -305,14 +348,18 @@ textarea {
 
 .location-alert-indicator {
   color: #ef4444;
-  font-weight: 800;
-  font-size: 1rem;
+  font-weight: 900;
+  font-size: 1em;
   line-height: 1;
   display: inline-block;
-  margin-left: 4px;
-  text-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+  margin-left: 1ch;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.55);
   position: relative;
-  top: -4px;
+  top: 0;
+}
+
+.location-alert-indicator.is-inactive {
+  opacity: 0.8;
 }
 
 .actions .btn {
@@ -446,10 +493,12 @@ h1 #refresh-weather {
   grid-template-columns: minmax(320px, 0.95fr) minmax(460px, 1.2fr);
   gap: 18px;
   align-items: stretch;
+  min-width: 0;
 }
 
 #alerts-container {
   grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .card {
@@ -462,6 +511,10 @@ h1 #refresh-weather {
   border: 1px solid var(--border);
   animation: floatIn 0.6s ease both;
   animation-delay: var(--delay, 0s);
+}
+
+.now-card {
+  grid-column: 1 / -1;
 }
 
 .card-title {
@@ -654,6 +707,7 @@ h1 #refresh-weather {
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
   animation-fill-mode: both;
+  min-width: 0;
 }
 
 .summary-text {
@@ -674,6 +728,7 @@ h1 #refresh-weather {
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
   animation-fill-mode: both;
+  min-width: 0;
 }
 
 .hourly-grid {
@@ -683,6 +738,7 @@ h1 #refresh-weather {
   padding: 0;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .hourly-item {
@@ -722,6 +778,13 @@ h1 #refresh-weather {
   white-space: nowrap;
 }
 
+.hourly-feels {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* Daily Forecast */
 .daily-forecast-section {
   background: var(--panel);
@@ -733,6 +796,7 @@ h1 #refresh-weather {
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
   animation-fill-mode: both;
+  min-width: 0;
 }
 
 .section-header {
@@ -760,7 +824,7 @@ h1 #refresh-weather {
 
 .daily-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) 36px 45px minmax(100px, 2fr) 50px;
+  grid-template-columns: minmax(160px, 1.8fr) 32px minmax(120px, 1fr) minmax(120px, 1fr);
   align-items: center;
   gap: 10px;
   padding: 12px 8px;
@@ -807,11 +871,12 @@ h1 #refresh-weather {
   font-weight: 600;
   color: var(--text-secondary);
   text-align: center;
+  white-space: nowrap;
 }
 
 .daily-temp-bar {
   height: 6px;
-  background: rgba(var(--text-primary-rgb), 0.15);
+  background: transparent;
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -1039,7 +1104,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: minmax(84px, 1fr) 32px 36px minmax(90px, 2fr) 42px;
+    grid-template-columns: minmax(140px, 1.6fr) 28px minmax(110px, 1fr) minmax(110px, 1fr);
     gap: 10px;
     padding: 10px 6px;
   }
@@ -1140,7 +1205,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: minmax(80px, 1fr) 30px 34px minmax(86px, 2fr) 40px;
+    grid-template-columns: minmax(130px, 1.6fr) 26px minmax(100px, 1fr) minmax(100px, 1fr);
     gap: 8px;
   }
 
@@ -1462,7 +1527,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: minmax(90px, 1fr) 28px 32px minmax(86px, 2fr) 38px;
+    grid-template-columns: minmax(120px, 1.6fr) 24px minmax(96px, 1fr) minmax(96px, 1fr);
     gap: 8px;
   }
 }

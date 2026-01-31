@@ -1242,6 +1242,14 @@ function updateHourlyContent(hourlyToday, hourlyError) {
       iconContainer.appendChild(svg);
       item.appendChild(iconContainer);
 
+      // Feels like
+      const feels = document.createElement('div');
+      feels.className = 'hourly-feels';
+      feels.textContent = Number.isFinite(hour?.feelsLike)
+        ? `${hour.feelsLike}\u00b0`
+        : '--';
+      item.appendChild(feels);
+
       // Temperature
       const temp = document.createElement('div');
       temp.className = 'hourly-temp';

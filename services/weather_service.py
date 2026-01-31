@@ -677,13 +677,15 @@ def _format_time_label(dt, time_zone=None):
     return f"{label} {tz_label}" if tz_label else label
 
 
-def _format_display_location(primary_label, near_label=None):
+def _format_display_location(primary_label, near_label=None, near_distance_mi=None):
     if not primary_label:
         return near_label
     if not near_label:
         return primary_label
     if primary_label.strip().lower() == near_label.strip().lower():
         return primary_label
+    if near_distance_mi is not None:
+        return f"{primary_label} ({near_distance_mi} miles from {near_label})"
     return f"{primary_label} (near {near_label})"
 
 
@@ -800,11 +802,21 @@ def build_hourly_today(periods, limit=24):
             cutoff = now.replace(minute=0, second=0, microsecond=0)
         if cutoff and dt < cutoff:
             continue
+        humidity = (period.get("relativeHumidity") or {}).get("value")
+        try:
+            humidity_value = float(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_value = None
+        wind_mph = _parse_wind_speed_mph(period.get("windSpeed"))
+        temp_value = period.get("temperature")
+        unit = period.get("temperatureUnit")
+        feels_like = _calculate_feels_like(temp_value, unit, humidity_value, wind_mph)
         hourly.append(
             {
                 "time": format_hour_label(dt),
-                "temperature": period.get("temperature"),
-                "temperatureUnit": period.get("temperatureUnit"),
+                "temperature": temp_value,
+                "temperatureUnit": unit,
+                "feelsLike": feels_like,
                 "shortForecast": period.get("shortForecast"),
             }
         )
@@ -818,11 +830,21 @@ def build_hourly_today(periods, limit=24):
         dt = parse_iso_datetime(period.get("startTime"))
         if not dt:
             continue
+        humidity = (period.get("relativeHumidity") or {}).get("value")
+        try:
+            humidity_value = float(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_value = None
+        wind_mph = _parse_wind_speed_mph(period.get("windSpeed"))
+        temp_value = period.get("temperature")
+        unit = period.get("temperatureUnit")
+        feels_like = _calculate_feels_like(temp_value, unit, humidity_value, wind_mph)
         fallback.append(
             {
                 "time": format_hour_label(dt),
-                "temperature": period.get("temperature"),
-                "temperatureUnit": period.get("temperatureUnit"),
+                "temperature": temp_value,
+                "temperatureUnit": unit,
+                "feelsLike": feels_like,
                 "shortForecast": period.get("shortForecast"),
             }
         )
@@ -861,12 +883,17 @@ def build_daily_forecast(periods, limit=7):
                 "low": None,
                 "all_high": None,
                 "all_low": None,
+                "feels_high": None,
+                "feels_low": None,
+                "all_feels_high": None,
+                "all_feels_low": None,
                 "temperatureUnit": period.get("temperatureUnit"),
             }
             order.append(day_key)
 
         entry = grouped[day_key]
         temp = period.get("temperature")
+        unit = period.get("temperatureUnit")
         if isinstance(temp, (int, float)):
             entry["all_high"] = (
                 temp if entry["all_high"] is None else max(entry["all_high"], temp)
@@ -878,6 +905,37 @@ def build_daily_forecast(periods, limit=7):
                 entry["high"] = temp if entry["high"] is None else max(entry["high"], temp)
             else:
                 entry["low"] = temp if entry["low"] is None else min(entry["low"], temp)
+
+        humidity = (period.get("relativeHumidity") or {}).get("value")
+        try:
+            humidity_value = float(humidity) if humidity is not None else None
+        except (TypeError, ValueError):
+            humidity_value = None
+        wind_mph = _parse_wind_speed_mph(period.get("windSpeed"))
+        feels_like = _calculate_feels_like(temp if isinstance(temp, (int, float)) else None, unit, humidity_value, wind_mph)
+        if isinstance(feels_like, (int, float)):
+            entry["all_feels_high"] = (
+                feels_like
+                if entry["all_feels_high"] is None
+                else max(entry["all_feels_high"], feels_like)
+            )
+            entry["all_feels_low"] = (
+                feels_like
+                if entry["all_feels_low"] is None
+                else min(entry["all_feels_low"], feels_like)
+            )
+            if period.get("isDaytime"):
+                entry["feels_high"] = (
+                    feels_like
+                    if entry["feels_high"] is None
+                    else max(entry["feels_high"], feels_like)
+                )
+            else:
+                entry["feels_low"] = (
+                    feels_like
+                    if entry["feels_low"] is None
+                    else min(entry["feels_low"], feels_like)
+                )
         if period.get("isDaytime"):
             entry["name"] = period.get("name") or entry["name"]
             if period.get("shortForecast"):
@@ -895,6 +953,16 @@ def build_daily_forecast(periods, limit=7):
         entry = grouped[day_key]
         high = entry.get("high") if entry.get("high") is not None else entry.get("all_high")
         low = entry.get("low") if entry.get("low") is not None else entry.get("all_low")
+        feels_high = (
+            entry.get("feels_high")
+            if entry.get("feels_high") is not None
+            else entry.get("all_feels_high")
+        )
+        feels_low = (
+            entry.get("feels_low")
+            if entry.get("feels_low") is not None
+            else entry.get("all_feels_low")
+        )
         daily.append(
             {
                 "key": entry.get("key"),
@@ -907,6 +975,8 @@ def build_daily_forecast(periods, limit=7):
                 "shortForecast": entry.get("shortForecast"),
                 "high": high,
                 "low": low,
+                "feels_high": feels_high,
+                "feels_low": feels_low,
                 "temperatureUnit": entry.get("temperatureUnit"),
             }
         )
@@ -1035,9 +1105,8 @@ def fetch_forecast(
         return None, "No forecast URL available for that location."
 
     # Extract city and state to create canonical location key
-    location_props = (
-        points_props.get("relativeLocation", {}).get("properties", {}) or {}
-    )
+    relative_location = points_props.get("relativeLocation", {}) or {}
+    location_props = (relative_location.get("properties", {}) or {})
     city = location_props.get("city")
     state = location_props.get("state")
 
@@ -1048,7 +1117,18 @@ def fetch_forecast(
         return None, "Could not determine city and state for this location."
     primary_label = default_key or location_key
     near_label = preferred_key if default_key and preferred_key else None
-    location = _format_display_location(primary_label, near_label)
+    near_distance_mi = None
+    if near_label:
+        rel_coords = (relative_location.get("geometry") or {}).get("coordinates") or []
+        if len(rel_coords) >= 2:
+            rel_lon, rel_lat = rel_coords[0], rel_coords[1]
+            try:
+                distance = _haversine_miles(lat, lon, float(rel_lat), float(rel_lon))
+            except (TypeError, ValueError):
+                distance = None
+            if distance is not None:
+                near_distance_mi = int(round(distance))
+    location = _format_display_location(primary_label, near_label, near_distance_mi)
 
     # Register the coordinate alias to point to the canonical location
     if coord_alias and location_key and cached_location_key != location_key:

@@ -23,6 +23,13 @@
             {% endif %}
           </svg>
         </div>
+        <div class="hourly-feels">
+          {% if hour.feelsLike is not none %}
+          {{ hour.feelsLike }}&deg;
+          {% else %}
+          --
+          {% endif %}
+        </div>
         <div class="hourly-temp">{{ hour.temperature }}&deg;</div>
       </div>
       {% endfor %}

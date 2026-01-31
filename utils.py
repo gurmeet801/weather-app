@@ -86,10 +86,10 @@ def format_location_key(city, state):
     """Create a canonical location key from City, State."""
     if not city or not state:
         return None
-    # Normalize to "City, State" format
+    # Normalize to "City State" format
     city = city.strip()
     state = state.strip()
-    return f"{city}, {state}"
+    return f"{city} {state}"
 
 
 def format_coordinate_alias(lat_value, lon_value):

@@ -48,11 +48,27 @@
           {% endif %}
         </svg>
       </div>
-      <div class="daily-temp-low">{% if day.low is not none %}{{ day.low }}&deg;{% else %}--{% endif %}</div>
-      <div class="daily-temp-bar">
-        <div class="temp-bar-fill" style="width: {{ (temp_range / 40 * 100) | round }}%"></div>
+      <div class="daily-temp-low">
+        {% if day.feels_low is not none %}
+          {{ day.feels_low }}&deg;
+          {% if day.low is not none %}({{ day.low }}&deg;){% endif %}
+        {% elif day.low is not none %}
+          {{ day.low }}&deg;
+        {% else %}
+          &nbsp;
+        {% endif %}
       </div>
-      <div class="daily-temp-high">{% if day.high is not none %}{{ day.high }}&deg;{% else %}--{% endif %}</div>
+      <div class="daily-temp-bar hidden" aria-hidden="true"></div>
+      <div class="daily-temp-high">
+        {% if day.feels_high is not none %}
+          {{ day.feels_high }}&deg;
+          {% if day.high is not none %}({{ day.high }}&deg;){% endif %}
+        {% elif day.high is not none %}
+          {{ day.high }}&deg;
+        {% else %}
+          &nbsp;
+        {% endif %}
+      </div>
     </button>
     {% endfor %}
   </div>
