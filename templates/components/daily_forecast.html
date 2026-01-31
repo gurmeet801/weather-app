@@ -1,13 +1,21 @@
 {# 7-Day Forecast Component #}
 {# Variables: forecast (required) #}
-<section class="card forecast-card" style="--delay: 0.2s;">
-  <div class="card-title">7-Day Forecast</div>
+<section class="daily-forecast-section" style="--delay: 0.2s;">
+  <div class="section-header">
+    <svg viewBox="0 0 24 24" fill="currentColor" class="section-icon">
+      <path d="M9 2h6v2H9V2zm0 16h6v2H9v-2zM2 9v6h2V9H2zm16 0v6h2V9h-2zM4.22 4.22l1.42 1.42L4.22 7.05 2.8 5.64l1.42-1.42zm13.56 0l1.42 1.42-1.42 1.41-1.41-1.41 1.41-1.42zM5.64 17.36l1.42 1.42-1.42 1.41-1.41-1.41 1.41-1.42zm12.72 0l1.42 1.42-1.42 1.41-1.41-1.41 1.41-1.42z"/>
+    </svg>
+    <span>DAILY FORECAST</span>
+  </div>
   {% if forecast.daily_forecast %}
-  <div id="daily-forecast-list" class="forecast-list">
-    {% for day in forecast.daily_forecast %}
+  <div id="daily-forecast-list" class="daily-list">
+    {% for day in forecast.daily_forecast[:7] %}
+    {% set low_temp = day.low if day.low is not none else 0 %}
+    {% set high_temp = day.high if day.high is not none else 100 %}
+    {% set temp_range = high_temp - low_temp if (day.high is not none and day.low is not none) else 50 %}
     <button
       type="button"
-      class="forecast-row"
+      class="daily-row"
       data-day-key="{{ day.key }}"
       data-day-name="{{ day.name }}"
       data-day-date="{{ day.date_label }}"
@@ -18,29 +26,28 @@
       aria-haspopup="dialog"
       aria-controls="day-detail-modal"
     >
-      <div>
-        <div class="forecast-day">{{ day.date_label }}{% if day.name == "Today" %} (today){% endif %}</div>
-      </div>
-      <div class="forecast-condition">
-        <svg class="forecast-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/>
+      <div class="daily-day-name">{{ day.name if day.name != "Tonight" else "Today" }}</div>
+      <div class="daily-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          {% if 'sunny' in (day.shortForecast or '').lower() or 'clear' in (day.shortForecast or '').lower() %}
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+          {% elif 'partly' in (day.shortForecast or '').lower() and ('cloud' in (day.shortForecast or '').lower() or 'sun' in (day.shortForecast or '').lower()) %}
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M12 3v2M12 17v2M6.34 6.34l1.41 1.41M16.25 16.25l1.41 1.41M3 12h2M19 12h2M6.34 17.66l1.41-1.41M16.25 7.75l1.41-1.41"/>
+          <path d="M17 17.5A4.5 4.5 0 1112.5 13H6a4 4 0 110-8h.5a5.5 5.5 0 0111 0V6h.5a4.5 4.5 0 110 9z" opacity="0.7"/>
+          {% elif 'cloud' in (day.shortForecast or '').lower() %}
+          <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
+          {% else %}
+          <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
+          {% endif %}
         </svg>
-        <span>{{ day.shortForecast | default('--', true) }}</span>
       </div>
-      <div class="forecast-temps">
-        <div class="temp-block">
-          <div class="temp-label">High</div>
-          <div class="forecast-high">
-            {% if day.high is not none %}{{ day.high }}&deg;{{ day.temperatureUnit | default('', true) }}{% else %}--{% endif %}
-          </div>
-        </div>
-        <div class="temp-block">
-          <div class="temp-label">Low</div>
-          <div class="forecast-low">
-            {% if day.low is not none %}{{ day.low }}&deg;{{ day.temperatureUnit | default('', true) }}{% else %}--{% endif %}
-          </div>
-        </div>
+      <div class="daily-temp-low">{% if day.low is not none %}{{ day.low }}&deg;{% else %}--{% endif %}</div>
+      <div class="daily-temp-bar">
+        <div class="temp-bar-fill" style="width: {{ (temp_range / 40 * 100) | round }}%"></div>
       </div>
+      <div class="daily-temp-high">{% if day.high is not none %}{{ day.high }}&deg;{% else %}--{% endif %}</div>
     </button>
     {% endfor %}
   </div>

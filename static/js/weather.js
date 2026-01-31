@@ -1203,39 +1203,56 @@ function updateHourlyContent(hourlyToday, hourlyError) {
   elements.hourlyContent.textContent = '';
 
   if (Array.isArray(hourlyToday) && hourlyToday.length) {
-    const list = document.createElement('div');
-    list.className = 'hourly-list';
-    hourlyToday.forEach((hour) => {
-      const row = document.createElement('div');
-      row.className = 'hour-row';
+    const grid = document.createElement('div');
+    grid.className = 'hourly-grid';
+    
+    // Only show first 7 hours
+    hourlyToday.slice(0, 7).forEach((hour) => {
+      const item = document.createElement('div');
+      item.className = 'hourly-item';
 
-      const timeTemp = document.createElement('div');
-      timeTemp.className = 'hour-time-temp';
-
-      const time = document.createElement('span');
-      time.className = 'hour-time';
+      // Time
+      const time = document.createElement('div');
+      time.className = 'hourly-time';
       time.textContent = hour?.time || '';
+      item.appendChild(time);
 
-      const temp = document.createElement('span');
-      temp.className = 'hour-temp';
+      // Icon
+      const iconContainer = document.createElement('div');
+      iconContainer.className = 'hourly-icon';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'currentColor');
+      
+      const forecast = (hour?.shortForecast || '').toLowerCase();
+      let iconPath = '';
+      
+      if (forecast.includes('sunny') || forecast.includes('clear')) {
+        // Sun icon
+        iconPath = '<circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>';
+      } else if (forecast.includes('partly') && forecast.includes('cloud')) {
+        // Partly cloudy icon
+        iconPath = '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M3 12h2M19 12h2M5.64 18.36l1.41-1.41M16.95 7.05l1.41-1.41"/><path d="M17 17.5A4.5 4.5 0 1112.5 13H6a4 4 0 110-8h.5a5.5 5.5 0 0111 0V6h.5a4.5 4.5 0 110 9z" opacity="0.7"/>';
+      } else {
+        // Cloud icon (default)
+        iconPath = '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>';
+      }
+      
+      svg.innerHTML = iconPath;
+      iconContainer.appendChild(svg);
+      item.appendChild(iconContainer);
+
+      // Temperature
+      const temp = document.createElement('div');
+      temp.className = 'hourly-temp';
       temp.textContent = Number.isFinite(hour?.temperature)
         ? `${hour.temperature}\u00b0`
         : '--';
+      item.appendChild(temp);
 
-      timeTemp.appendChild(time);
-      timeTemp.appendChild(temp);
-      row.appendChild(timeTemp);
-
-      if (hour?.shortForecast) {
-        const summary = document.createElement('div');
-        summary.className = 'hour-summary';
-        summary.textContent = hour.shortForecast;
-        row.appendChild(summary);
-      }
-
-      list.appendChild(row);
+      grid.appendChild(item);
     });
-    elements.hourlyContent.appendChild(list);
+    elements.hourlyContent.appendChild(grid);
     return;
   }
 
