@@ -4,7 +4,7 @@
   <div id="hourly-content">
     {% if forecast.hourly_today %}
     <div class="hourly-grid">
-      {% for hour in forecast.hourly_today[:7] %}
+      {% for hour in forecast.hourly_today %}
       <div class="hourly-item">
         <div class="hourly-time">{{ hour.time }}</div>
         <div class="hourly-icon">
