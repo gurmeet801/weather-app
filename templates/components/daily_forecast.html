@@ -21,7 +21,7 @@
       aria-haspopup="dialog"
       aria-controls="day-detail-modal"
     >
-      {% set is_today = day.name == "Tonight" or day.name == "Today" %}
+      {% set is_today = day.is_today or day.name == "Tonight" or day.name == "Today" %}
       <div class="daily-day-name">
         {{ day.dow_short or day.name }} {{ day.date_short or day.date_label }}{% if is_today %}<sup class="today-marker">T</sup>{% endif %}
       </div>

@@ -906,8 +906,9 @@ h1 #refresh-weather {
 
 .daily-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
+  justify-items: center;
   gap: 10px;
   padding: 12px 8px;
   background: transparent;
@@ -961,7 +962,8 @@ h1 #refresh-weather {
 .daily-temps-max {
   display: flex;
   gap: 0.3em;
-  justify-content: flex-end;
+  justify-content: center;
+  justify-self: center;
   font-size: 1.1rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1592,15 +1594,7 @@ h1 #refresh-weather {
     font-size: 1.15rem;
   }
 
-  .daily-row {
-    grid-template-columns: minmax(96px, 1.5fr) 28px 1fr 1fr;
-    column-gap: 8px;
-  }
-
-  .daily-day-name {
-    text-align: left;
-    justify-self: start;
-  }
+  
 }
 
 @media (max-width: 420px) {

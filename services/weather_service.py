@@ -878,6 +878,7 @@ def build_daily_forecast(periods, limit=7):
                 "date_short": dt.strftime("%m/%d"),
                 "dow_short": dt.strftime("%a"),
                 "name": dt.strftime("%a"),
+                "is_today": False,
                 "shortForecast": None,
                 "high": None,
                 "low": None,
@@ -892,6 +893,8 @@ def build_daily_forecast(periods, limit=7):
             order.append(day_key)
 
         entry = grouped[day_key]
+        if today and day_key == today.isoformat():
+            entry["is_today"] = True
         temp = period.get("temperature")
         unit = period.get("temperatureUnit")
         if isinstance(temp, (int, float)):
@@ -972,6 +975,7 @@ def build_daily_forecast(periods, limit=7):
                 "dow_short": entry.get("dow_short")
                 or entry["date"].strftime("%a"),
                 "name": entry.get("name") or entry["date"].strftime("%a"),
+                "is_today": entry.get("is_today", False),
                 "shortForecast": entry.get("shortForecast"),
                 "high": high,
                 "low": low,
