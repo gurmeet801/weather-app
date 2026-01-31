@@ -1200,6 +1200,7 @@ function updateDailyDetails(details) {
 
 function updateHourlyContent(hourlyToday, hourlyError) {
   if (!elements.hourlyContent) return;
+  elements.hourlyContent.dataset.status = 'loading';
   elements.hourlyContent.textContent = '';
 
   if (Array.isArray(hourlyToday) && hourlyToday.length) {
@@ -1253,6 +1254,7 @@ function updateHourlyContent(hourlyToday, hourlyError) {
       grid.appendChild(item);
     });
     elements.hourlyContent.appendChild(grid);
+    elements.hourlyContent.dataset.status = 'loaded';
     return;
   }
 
@@ -1263,6 +1265,7 @@ function updateHourlyContent(hourlyToday, hourlyError) {
   message.textContent = hourlyError || 'Hourly forecast unavailable';
   panel.appendChild(message);
   elements.hourlyContent.appendChild(panel);
+  elements.hourlyContent.dataset.status = hourlyError ? 'error' : 'empty';
 }
 
 function updateAlertsContent(html) {
@@ -1340,11 +1343,18 @@ async function loadDeferredExtras(coords) {
     const response = await fetch(`/api/extras?${params.toString()}`, {
       headers: { Accept: 'application/json' },
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      if (elements.hourlyContent?.dataset?.status !== 'loaded') {
+        updateHourlyContent(null, 'Hourly forecast unavailable');
+      }
+      return;
+    }
     const data = await response.json();
     applyDeferredExtras(data);
   } catch (error) {
-    // Ignore deferred extras failures.
+    if (elements.hourlyContent?.dataset?.status !== 'loaded') {
+      updateHourlyContent(null, 'Hourly forecast unavailable');
+    }
   }
 }
 

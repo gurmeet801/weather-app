@@ -163,6 +163,7 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   transition: background-color 0.4s ease, color 0.4s ease;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 h1,
@@ -192,6 +193,8 @@ textarea {
   padding-top: clamp(2px, 0.3vw, 3px);
   position: relative;
   z-index: 1;
+  padding-left: max(clamp(16px, 3vw, 24px), env(safe-area-inset-left));
+  padding-right: max(clamp(16px, 3vw, 24px), env(safe-area-inset-right));
 }
 
 .text-white {
@@ -313,8 +316,8 @@ textarea {
 }
 
 .actions .btn {
-  min-width: 120px;
-  padding: 8px 12px;
+  min-width: 0;
+  padding: 6px 8px;
   font-size: 0.86rem;
   border-radius: 9px;
   background: #d9ecff;
@@ -443,6 +446,10 @@ h1 #refresh-weather {
   grid-template-columns: minmax(320px, 0.95fr) minmax(460px, 1.2fr);
   gap: 18px;
   align-items: stretch;
+}
+
+#alerts-container {
+  grid-column: 1 / -1;
 }
 
 .card {
@@ -642,7 +649,7 @@ h1 #refresh-weather {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px 20px;
-  margin-bottom: 16px;
+  grid-column: 1 / -1;
   box-shadow: var(--shadow-soft);
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
@@ -658,7 +665,12 @@ h1 #refresh-weather {
 
 /* Hourly Forecast */
 .hourly-section {
-  margin-bottom: 16px;
+  grid-column: 1 / -1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-soft);
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
   animation-fill-mode: both;
@@ -668,8 +680,9 @@ h1 #refresh-weather {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 16px 0;
+  padding: 0;
   scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hourly-item {
@@ -715,6 +728,7 @@ h1 #refresh-weather {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
+  grid-column: 1 / -1;
   box-shadow: var(--shadow-soft);
   animation: fade-up 0.5s ease-out;
   animation-delay: var(--delay, 0s);
@@ -746,7 +760,7 @@ h1 #refresh-weather {
 
 .daily-row {
   display: grid;
-  grid-template-columns: 70px 36px 45px 1fr 50px;
+  grid-template-columns: minmax(90px, 1fr) 36px 45px minmax(100px, 2fr) 50px;
   align-items: center;
   gap: 10px;
   padding: 12px 8px;
@@ -755,6 +769,7 @@ h1 #refresh-weather {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s ease;
+  min-width: 0;
 }
 
 .daily-row:hover {
@@ -766,6 +781,11 @@ h1 #refresh-weather {
   font-weight: 600;
   color: var(--text-primary);
   text-align: left;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  min-width: 0;
+  line-height: 1.2;
 }
 
 .daily-icon {
@@ -803,6 +823,7 @@ h1 #refresh-weather {
   border-radius: 999px;
   transition: width 0.3s ease;
   min-width: 20%;
+  max-width: 100%;
 }
 
 .chip {
@@ -1018,7 +1039,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: 55px 35px 38px 1fr 45px;
+    grid-template-columns: minmax(84px, 1fr) 32px 36px minmax(90px, 2fr) 42px;
     gap: 10px;
     padding: 10px 6px;
   }
@@ -1063,6 +1084,11 @@ h1 #refresh-weather {
   .topbar {
     gap: 8px;
     margin-bottom: 12px;
+  }
+
+  .app {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
   }
 
   .location h1 {
@@ -1114,7 +1140,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: 50px 32px 35px 1fr 40px;
+    grid-template-columns: minmax(80px, 1fr) 30px 34px minmax(86px, 2fr) 40px;
     gap: 8px;
   }
 
@@ -1284,7 +1310,9 @@ h1 #refresh-weather {
   }
 
   .app {
-    padding: 14px;
+    padding: 12px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
   }
 
   .now-temp {
@@ -1399,6 +1427,43 @@ h1 #refresh-weather {
   .forecast-high,
   .forecast-low {
     font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 440px) {
+  .topbar {
+    gap: 10px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .actions .btn {
+    min-width: 0;
+    padding: 10px 10px;
+  }
+
+  .summary-banner {
+    padding: 14px 16px;
+  }
+
+  .hourly-section {
+    padding: 14px 16px;
+  }
+
+  .hourly-item {
+    min-width: 72px;
+  }
+
+  .daily-forecast-section {
+    padding: 16px;
+  }
+
+  .daily-row {
+    grid-template-columns: minmax(90px, 1fr) 28px 32px minmax(86px, 2fr) 38px;
+    gap: 8px;
   }
 }
 

@@ -853,6 +853,8 @@ def build_daily_forecast(periods, limit=7):
                 "date": dt,
                 "key": day_key,
                 "date_label": dt.strftime("%a, %b %d"),
+                "date_short": dt.strftime("%m/%d"),
+                "dow_short": dt.strftime("%a"),
                 "name": dt.strftime("%a"),
                 "shortForecast": None,
                 "high": None,
@@ -897,6 +899,10 @@ def build_daily_forecast(periods, limit=7):
             {
                 "key": entry.get("key"),
                 "date_label": entry.get("date_label"),
+                "date_short": entry.get("date_short")
+                or entry["date"].strftime("%m/%d"),
+                "dow_short": entry.get("dow_short")
+                or entry["date"].strftime("%a"),
                 "name": entry.get("name") or entry["date"].strftime("%a"),
                 "shortForecast": entry.get("shortForecast"),
                 "high": high,

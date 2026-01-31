@@ -26,7 +26,12 @@
       aria-haspopup="dialog"
       aria-controls="day-detail-modal"
     >
-      <div class="daily-day-name">{{ day.name if day.name != "Tonight" else "Today" }}</div>
+      {% set is_today = day.name == "Tonight" or day.name == "Today" %}
+      {% set day_prefix = "Today" if is_today else (day.dow_short or day.name) %}
+      {% set day_suffix = (day.dow_short or day.name) if is_today else "" %}
+      <div class="daily-day-name">
+        {{ day_prefix }}{% if day_suffix %} {{ day_suffix }}{% endif %} {{ day.date_short or day.date_label }}
+      </div>
       <div class="daily-icon">
         <svg viewBox="0 0 24 24" fill="currentColor">
           {% if 'sunny' in (day.shortForecast or '').lower() or 'clear' in (day.shortForecast or '').lower() %}
