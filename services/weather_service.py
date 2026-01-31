@@ -1115,8 +1115,9 @@ def fetch_forecast(
     location_key = preferred_key or cached_location_key or default_key
     if not location_key:
         return None, "Could not determine city and state for this location."
-    primary_label = default_key or location_key
-    near_label = preferred_key if default_key and preferred_key else None
+    # Show user's searched location first, NWS relative location in parentheses
+    primary_label = preferred_key or location_key
+    near_label = default_key if default_key and preferred_key and default_key != preferred_key else None
     near_distance_mi = None
     if near_label:
         rel_coords = (relative_location.get("geometry") or {}).get("coordinates") or []
