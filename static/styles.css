@@ -748,6 +748,21 @@ h1 #refresh-weather {
   white-space: nowrap;
 }
 
+@media (min-width: 641px) {
+  .stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    white-space: normal;
+  }
+
+  .stat-value,
+  .stat-label {
+    white-space: normal;
+    line-height: 1.1;
+  }
+}
+
 /* Summary Banner */
 .summary-banner {
   background: var(--panel);
@@ -798,9 +813,9 @@ h1 #refresh-weather {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 12px 8px;
-  min-width: 80px;
+  gap: 24px;
+  padding: 16px 10px;
+  min-width: 90px;
   flex-shrink: 0;
 }
 
@@ -815,6 +830,8 @@ h1 #refresh-weather {
 .hourly-icon {
   width: 44px;
   height: 44px;
+  margin-top: 6px;
+  margin-bottom: 8px;
   color: var(--accent);
   flex-shrink: 0;
 }
@@ -829,6 +846,7 @@ h1 #refresh-weather {
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 .hourly-feels {
@@ -836,6 +854,7 @@ h1 #refresh-weather {
   font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 /* Daily Forecast */
