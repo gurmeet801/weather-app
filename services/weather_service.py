@@ -1112,6 +1112,8 @@ def fetch_forecast(
 
     # Prefer the geocoded location (address search) or cached alias when available.
     default_key = format_location_key(city, state)
+    if not preferred_key and cached_location_key:
+        preferred_key = cached_location_key
     location_key = preferred_key or cached_location_key or default_key
     if not location_key:
         return None, "Could not determine city and state for this location."
