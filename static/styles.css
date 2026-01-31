@@ -884,12 +884,13 @@ h1 #refresh-weather {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
-  text-align: left;
+  text-align: center;
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   min-width: 0;
   line-height: 1.2;
+  justify-self: center;
 }
 
 .today-marker {
