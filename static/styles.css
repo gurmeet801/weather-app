@@ -787,7 +787,8 @@ h1 #refresh-weather {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 0;
+  padding: 0 20px 0 0;
+  scroll-padding-right: 20px;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
@@ -1391,19 +1392,24 @@ h1 #refresh-weather {
   }
 
   .stats-grid {
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .stat {
     padding: 0;
+    white-space: normal;
+    flex-wrap: wrap;
   }
 
   .stat-value {
     font-size: 0.9rem;
+    white-space: normal;
   }
 
   .stat-label {
     font-size: 0.7rem;
+    white-space: normal;
   }
 
   .summary-text {
