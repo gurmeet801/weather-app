@@ -87,6 +87,49 @@ const CONFIG = {
 
 const ALERT_RADIUS_COOKIE = 'alert_radius_mi';
 const ALERT_RADIUS_DEFAULT = 10;
+
+/**
+ * Get weather emoji based on forecast text
+ * @param {string} forecastText - The forecast description
+ * @param {boolean} isDaytime - Whether it's daytime
+ * @returns {string} Weather emoji
+ */
+function getWeatherEmoji(forecastText, isDaytime = true) {
+  const text = (forecastText || '').toLowerCase();
+
+  if (text.includes('thunder') || text.includes('storm') || text.includes('t-storm')) {
+    return '⛈️';
+  } else if (text.includes('snow') || text.includes('flurr') || text.includes('blizzard')) {
+    return '🌨️';
+  } else if (text.includes('sleet') || text.includes('freezing rain') || text.includes('ice')) {
+    return '🌧️❄️';
+  } else if (text.includes('rain') || text.includes('shower') || text.includes('drizzle')) {
+    return '🌧️';
+  } else if (text.includes('fog') || text.includes('mist') || text.includes('haze') || text.includes('smoke')) {
+    return '🌫️';
+  } else if (text.includes('wind') || text.includes('breezy') || text.includes('blustery')) {
+    return '💨';
+  } else if (text.includes('partly cloudy') || text.includes('partly sunny')) {
+    return isDaytime ? '🌤️' : '☁️';
+  } else if (text.includes('mostly cloudy')) {
+    return isDaytime ? '🌥️' : '☁️';
+  } else if (text.includes('mostly sunny') || text.includes('mostly clear')) {
+    return isDaytime ? '🌤️' : '🌙';
+  } else if (text.includes('cloud') || text.includes('overcast')) {
+    return '☁️';
+  } else if (text.includes('sun') || text.includes('clear') || text.includes('fair')) {
+    return isDaytime ? '☀️' : '🌙';
+  } else if (text.includes('hot')) {
+    return '🔥';
+  } else if (text.includes('cold') || text.includes('frigid')) {
+    return '🥶';
+  } else if (text.includes('tornado') || text.includes('funnel')) {
+    return '🌪️';
+  } else if (text.includes('hurricane') || text.includes('tropical')) {
+    return '🌀';
+  }
+  return '☁️';
+}
 const ALERT_RADIUS_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
 
 // State
@@ -1220,26 +1263,10 @@ function updateHourlyContent(hourlyToday, hourlyError) {
       // Icon
       const iconContainer = document.createElement('div');
       iconContainer.className = 'hourly-icon';
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'currentColor');
-      
-      const forecast = (hour?.shortForecast || '').toLowerCase();
-      let iconPath = '';
-      
-      if (forecast.includes('sunny') || forecast.includes('clear')) {
-        // Sun icon
-        iconPath = '<circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>';
-      } else if (forecast.includes('partly') && forecast.includes('cloud')) {
-        // Partly cloudy icon
-        iconPath = '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M3 12h2M19 12h2M5.64 18.36l1.41-1.41M16.95 7.05l1.41-1.41"/><path d="M17 17.5A4.5 4.5 0 1112.5 13H6a4 4 0 110-8h.5a5.5 5.5 0 0111 0V6h.5a4.5 4.5 0 110 9z" opacity="0.7"/>';
-      } else {
-        // Cloud icon (default)
-        iconPath = '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>';
-      }
-      
-      svg.innerHTML = iconPath;
-      iconContainer.appendChild(svg);
+      const emojiSpan = document.createElement('span');
+      emojiSpan.className = 'weather-emoji';
+      emojiSpan.textContent = getWeatherEmoji(hour?.shortForecast, hour?.isDaytime !== false);
+      iconContainer.appendChild(emojiSpan);
       item.appendChild(iconContainer);
 
       // Feels like

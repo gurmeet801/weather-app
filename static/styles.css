@@ -779,7 +779,7 @@ h1 #refresh-weather {
 }
 
 .hourly-time {
-  font-size: 0.85rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: var(--text-secondary);
   text-align: center;
@@ -851,7 +851,7 @@ h1 #refresh-weather {
 
 .daily-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.8fr) 32px minmax(120px, 1fr) minmax(120px, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 10px;
   padding: 12px 8px;
@@ -879,11 +879,20 @@ h1 #refresh-weather {
   line-height: 1.2;
 }
 
+.today-marker {
+  font-size: 0.65em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-left: 2px;
+  vertical-align: super;
+}
+
 .daily-icon {
   width: 36px;
   height: 36px;
   color: var(--accent);
   flex-shrink: 0;
+  justify-self: center;
 }
 
 .daily-icon svg {
@@ -1118,7 +1127,7 @@ h1 #refresh-weather {
   }
 
   .hourly-time {
-    font-size: 0.8rem;
+    font-size: 1.2rem;
   }
 
   .hourly-icon {
@@ -1130,8 +1139,12 @@ h1 #refresh-weather {
     font-size: 1.2rem;
   }
 
+  .hourly-feels {
+    font-size: 1.2rem;
+  }
+
   .daily-row {
-    grid-template-columns: minmax(140px, 1.6fr) 28px minmax(110px, 1fr) minmax(110px, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     padding: 10px 6px;
   }
@@ -1219,7 +1232,7 @@ h1 #refresh-weather {
   }
 
   .hourly-time {
-    font-size: 0.75rem;
+    font-size: 1.1rem;
   }
 
   .hourly-icon {
@@ -1231,8 +1244,12 @@ h1 #refresh-weather {
     font-size: 1.1rem;
   }
 
+  .hourly-feels {
+    font-size: 1.1rem;
+  }
+
   .daily-row {
-    grid-template-columns: minmax(130px, 1.6fr) 26px minmax(100px, 1fr) minmax(100px, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
   }
 
@@ -1596,7 +1613,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: minmax(90px, 1.2fr) 24px minmax(70px, 1fr) minmax(70px, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
 
@@ -1657,7 +1674,7 @@ h1 #refresh-weather {
   }
 
   .daily-row {
-    grid-template-columns: minmax(75px, 1fr) 22px minmax(60px, 1fr) minmax(60px, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     padding: 10px 4px;
   }

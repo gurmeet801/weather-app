@@ -2,10 +2,6 @@
 {# Variables: forecast (required) #}
 {% from "components/_weather_icons.html" import get_weather_emoji %}
 <section class="daily-forecast-section" style="--delay: 0.2s;">
-  <div class="section-header">
-    <span class="section-icon-emoji">📅</span>
-    <span>DAILY FORECAST</span>
-  </div>
   {% if forecast.daily_forecast %}
   <div id="daily-forecast-list" class="daily-list">
     {% for day in forecast.daily_forecast[:7] %}
@@ -26,10 +22,8 @@
       aria-controls="day-detail-modal"
     >
       {% set is_today = day.name == "Tonight" or day.name == "Today" %}
-      {% set day_prefix = "Today" if is_today else (day.dow_short or day.name) %}
-      {% set day_suffix = (day.dow_short or day.name) if is_today else "" %}
       <div class="daily-day-name">
-        {{ day_prefix }}{% if day_suffix %} {{ day_suffix }}{% endif %} {{ day.date_short or day.date_label }}
+        {{ day.dow_short or day.name }} {{ day.date_short or day.date_label }}{% if is_today %}<sup class="today-marker">T</sup>{% endif %}
       </div>
       <div class="daily-icon">
         <span class="weather-emoji">{{ get_weather_emoji(day.shortForecast, day.isDaytime if day.isDaytime is defined else true) }}</span>

@@ -4,12 +4,21 @@
   <div class="topbar">
     <div class="location">
       <h1>
-        <span class="location-name">{{ forecast.location }}</span>
-        <span
-          id="location-alert-indicator"
-          class="location-alert-indicator{% if not forecast.alerts %} is-inactive{% endif %}"
-          aria-hidden="true"
-        >*</span>
+        {% if '(' in forecast.location %}
+          {% set loc_parts = forecast.location.split('(', 1) %}
+          <span class="location-name">{{ loc_parts[0].strip() }}</span><sup
+            id="location-alert-indicator"
+            class="location-alert-indicator{% if not forecast.alerts %} is-inactive{% endif %}"
+            aria-hidden="true"
+          >*</sup>
+          <span class="location-proximity">({{ loc_parts[1] }}</span>
+        {% else %}
+          <span class="location-name">{{ forecast.location }}</span><sup
+            id="location-alert-indicator"
+            class="location-alert-indicator{% if not forecast.alerts %} is-inactive{% endif %}"
+            aria-hidden="true"
+          >*</sup>
+        {% endif %}
         <span class="location-actions-inline">
           <button id="refresh-weather" type="button" class="btn primary" aria-label="Refresh weather">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
