@@ -827,7 +827,7 @@ h1 #refresh-weather {
 }
 
 .hourly-time {
-  font-size: 1.3rem;
+  font-size: 1.04rem;
   font-weight: 600;
   color: var(--text-secondary);
   text-align: center;

@@ -334,7 +334,12 @@ def parse_iso_datetime(value):
 def format_hour_label(dt):
     if not dt:
         return None
-    return dt.strftime("%H").lstrip("0") or "0"
+    hour = dt.hour
+    period = "am" if hour < 12 else "pm"
+    hour_12 = hour % 12
+    if hour_12 == 0:
+        hour_12 = 12
+    return f"{hour_12}{period}"
 
 
 def format_alert_time(value):
