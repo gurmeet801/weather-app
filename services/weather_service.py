@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import requests
+from dateutil import tz
 
 from services.geocode_service import geocode_place
 from utils import (
@@ -620,14 +621,49 @@ def _parse_alert_description(text):
 
 
 def _now_in_timezone(time_zone, fallback_dt=None):
-    if time_zone:
-        try:
-            return datetime.now(ZoneInfo(time_zone))
-        except Exception:
-            pass
+    tzinfo = _resolve_time_zone_info(time_zone)
+    if tzinfo:
+        return datetime.now(tzinfo)
     if fallback_dt and fallback_dt.tzinfo:
         return datetime.now(fallback_dt.tzinfo)
     return datetime.now()
+
+
+def _resolve_time_zone_info(time_zone):
+    if not isinstance(time_zone, str):
+        return None
+    cleaned = time_zone.strip()
+    if not cleaned:
+        return None
+    aliases = {
+        "EST": "America/New_York",
+        "EDT": "America/New_York",
+        "CST": "America/Chicago",
+        "CDT": "America/Chicago",
+        "MST": "America/Denver",
+        "MDT": "America/Denver",
+        "PST": "America/Los_Angeles",
+        "PDT": "America/Los_Angeles",
+    }
+    candidate = aliases.get(cleaned.upper(), cleaned)
+    try:
+        return ZoneInfo(candidate)
+    except Exception:
+        return tz.gettz(candidate)
+
+
+def _to_location_timezone(dt, time_zone=None):
+    if not dt:
+        return dt
+    tzinfo = _resolve_time_zone_info(time_zone)
+    if not tzinfo:
+        return dt
+    try:
+        if dt.tzinfo:
+            return dt.astimezone(tzinfo)
+        return dt.replace(tzinfo=tzinfo)
+    except Exception:
+        return dt
 
 
 def _forecast_overview_label(period, time_zone=None):
@@ -661,19 +697,11 @@ def _forecast_overview_label(period, time_zone=None):
 def _format_time_label(dt, time_zone=None):
     if not dt:
         return None
-    if time_zone:
-        try:
-            tzinfo = ZoneInfo(time_zone)
-            if dt.tzinfo:
-                dt = dt.astimezone(tzinfo)
-            else:
-                dt = dt.replace(tzinfo=tzinfo)
-        except Exception:
-            pass
+    dt = _to_location_timezone(dt, time_zone)
     label = format_display_datetime(dt)
     if not label:
         return None
-    tz_label = dt.tzname() if dt.tzinfo else None
+    tz_label = dt.tzname() if _resolve_time_zone_info(time_zone) and dt.tzinfo else None
     return f"{label} {tz_label}" if tz_label else label
 
 
@@ -788,13 +816,13 @@ def _calculate_feels_like(temp, unit, humidity=None, wind_mph=None):
     return int(round(feels_value))
 
 
-def build_hourly_today(periods, limit=24):
+def build_hourly_today(periods, limit=24, time_zone=None):
     if not periods or limit <= 0:
         return []
     hourly = []
     cutoff = None
     for period in periods:
-        dt = parse_iso_datetime(period.get("startTime"))
+        dt = _to_location_timezone(parse_iso_datetime(period.get("startTime")), time_zone)
         if not dt:
             continue
         if cutoff is None:
@@ -827,7 +855,7 @@ def build_hourly_today(periods, limit=24):
 
     fallback = []
     for period in periods:
-        dt = parse_iso_datetime(period.get("startTime"))
+        dt = _to_location_timezone(parse_iso_datetime(period.get("startTime")), time_zone)
         if not dt:
             continue
         humidity = (period.get("relativeHumidity") or {}).get("value")
@@ -853,7 +881,7 @@ def build_hourly_today(periods, limit=24):
     return fallback
 
 
-def build_daily_forecast(periods, limit=7):
+def build_daily_forecast(periods, limit=7, time_zone=None):
     if not periods:
         return []
     grouped = {}
@@ -861,7 +889,7 @@ def build_daily_forecast(periods, limit=7):
     today = None
 
     for period in periods:
-        dt = parse_iso_datetime(period.get("startTime"))
+        dt = _to_location_timezone(parse_iso_datetime(period.get("startTime")), time_zone)
         if not dt:
             continue
         if today is None:
@@ -987,7 +1015,7 @@ def build_daily_forecast(periods, limit=7):
     return daily
 
 
-def build_daily_details(periods, limit=7):
+def build_daily_details(periods, limit=7, time_zone=None):
     if not periods:
         return []
     grouped = {}
@@ -995,7 +1023,7 @@ def build_daily_details(periods, limit=7):
     today = None
 
     for period in periods:
-        dt = parse_iso_datetime(period.get("startTime"))
+        dt = _to_location_timezone(parse_iso_datetime(period.get("startTime")), time_zone)
         if not dt:
             continue
         if today is None:
@@ -1188,8 +1216,8 @@ def fetch_forecast(
                     or hourly_props.get("generatedAt")
                 )
                 hourly_periods = hourly_props.get("periods", [])
-                hourly_today = build_hourly_today(hourly_periods)
-                daily_details = build_daily_details(hourly_periods)
+                hourly_today = build_hourly_today(hourly_periods, time_zone=time_zone)
+                daily_details = build_daily_details(hourly_periods, time_zone=time_zone)
             except requests.HTTPError:
                 hourly_error = "Hourly forecast unavailable."
             except requests.RequestException:
@@ -1309,13 +1337,7 @@ def fetch_forecast(
                         observation_dt = parse_iso_datetime(props.get("timestamp"))
                         if not observation_dt:
                             continue
-                        if observation_dt.tzinfo is None and time_zone:
-                            try:
-                                observation_dt = observation_dt.replace(
-                                    tzinfo=ZoneInfo(time_zone)
-                                )
-                            except Exception:
-                                pass
+                        observation_dt = _to_location_timezone(observation_dt, time_zone)
                         try:
                             timestamp_value = observation_dt.timestamp()
                         except (OSError, ValueError, OverflowError):
@@ -1357,7 +1379,7 @@ def fetch_forecast(
                 area_desc = props.get("areaDesc")
                 severity = props.get("severity")
                 severity_slug = _severity_slug(severity)
-                issued_time = format_alert_time(props.get("sent"))
+                issued_time = format_alert_time(props.get("sent"), time_zone=time_zone)
                 issuer = props.get("senderName")
                 base_title = _alert_base_title(props)
                 what, impacts, description = _parse_alert_description(
@@ -1386,8 +1408,8 @@ def fetch_forecast(
                         "sent": issued_time,
                         "start_iso": start_time,
                         "end_iso": end_time,
-                        "start": format_alert_time(start_time),
-                        "ends": format_alert_time(end_time),
+                        "start": format_alert_time(start_time, time_zone=time_zone),
+                        "ends": format_alert_time(end_time, time_zone=time_zone),
                         "description": description,
                         "what": what,
                         "impacts": impacts,
@@ -1465,7 +1487,7 @@ def fetch_forecast(
         "hourly_today": hourly_today,
         "hourly_error": hourly_error,
         "daily_details": daily_details,
-        "daily_forecast": build_daily_forecast(periods),
+        "daily_forecast": build_daily_forecast(periods, time_zone=time_zone),
         "alerts": alerts,
         "alerts_error": alerts_error,
         "alerts_deferred": alerts_deferred,

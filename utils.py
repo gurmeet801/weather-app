@@ -6,8 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from threading import Lock
 from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
 
 import requests
+from dateutil import tz
 
 def _load_env():
     env_path = Path(__file__).resolve().parent / ".env"
@@ -342,10 +344,24 @@ def format_hour_label(dt):
     return f"{hour_12}{period}"
 
 
-def format_alert_time(value):
+def format_alert_time(value, time_zone=None):
     dt = parse_iso_datetime(value)
     if not dt:
         return None
+    if time_zone:
+        try:
+            tzinfo = ZoneInfo(time_zone)
+        except Exception:
+            tzinfo = tz.gettz(time_zone)
+        try:
+            if not tzinfo:
+                raise ValueError("invalid timezone")
+            if dt.tzinfo:
+                dt = dt.astimezone(tzinfo)
+            else:
+                dt = dt.replace(tzinfo=tzinfo)
+        except Exception:
+            pass
     return format_display_datetime(dt)
 
 

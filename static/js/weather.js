@@ -926,6 +926,28 @@ function formatDateTimeLabel(value, timeZone) {
   return `${weekday}, ${month}/${day}, ${hour}:${minute}${dayPeriod}`;
 }
 
+function formatDateTimeLabelWithZone(value, timeZone) {
+  const label = formatDateTimeLabel(value, timeZone);
+  if (!label) return '';
+  if (!timeZone) return label;
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return label;
+  try {
+    const tzPart = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'short',
+    })
+      .formatToParts(date)
+      .find((part) => part.type === 'timeZoneName');
+    if (tzPart?.value) {
+      return `${label} ${tzPart.value}`;
+    }
+  } catch (error) {
+    return label;
+  }
+  return label;
+}
+
 function formatTimeLabelWithSeconds(value, timeZone) {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return '';
@@ -1056,7 +1078,10 @@ function updateHeaderTimestamp({ observationLabel, observationStation, observati
     target.dataset.observationTimestamp = observationTimestamp.trim();
   }
 
-  const observationText = normalizeHeaderLabel(target.dataset.observationLabel || '');
+  const observationIso = (target.dataset.observationTimestamp || '').trim();
+  const observationText =
+    formatDateTimeLabelWithZone(observationIso, currentTimeZone) ||
+    normalizeHeaderLabel(target.dataset.observationLabel || '');
   const stationText = (target.dataset.observationStation || '').trim();
   const ageText = formatRelativeAge(target.dataset.observationTimestamp || '');
   if (!observationText && !stationText) return;
@@ -1359,6 +1384,12 @@ async function prefetchAllStations(coords) {
  */
 function applyFreshStationData(data) {
   if (!data || typeof data !== 'object') return;
+  if (data.time_zone && typeof data.time_zone === 'string') {
+    const trimmed = data.time_zone.trim();
+    if (trimmed) {
+      currentTimeZone = trimmed;
+    }
+  }
 
   // Update the selected station's observation data
   const selectedStation = currentObservationStationId;
