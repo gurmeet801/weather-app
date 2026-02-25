@@ -1,4 +1,4 @@
-# AGENTS.md instructions for y:\weather-app
+# Project guidelines for y:\weather-app
 
 <INSTRUCTIONS>
 ## Skills
@@ -23,3 +23,4 @@ These skills are discovered at startup from multiple local sources. Each entry i
   - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.
 - Safety and fallback: If a skill can't be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.
 </INSTRUCTIONS>
+
